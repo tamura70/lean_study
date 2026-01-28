@@ -2,4 +2,4 @@
 
 ## SAT
 
-- [SAT/sat_work.lean]
+- [sat_work.lean](./SAT/sat_work.lean)

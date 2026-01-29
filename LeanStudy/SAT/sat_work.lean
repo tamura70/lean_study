@@ -15,30 +15,23 @@ section
 open Std
 open Sat
 open Literal
-open Clause
 open CNF
+open Clause
 
-#print Std.Sat.Literal
-#print Std.Sat.CNF.Clause
-#print Std.Sat.CNF
+#print Literal
+#print Clause
+#print CNF
 
 /-!
 Literal
 -/
 
 /--
-Literal x について x.negate は Literal の符号を反転する
--/
-theorem Literal.complement_sign (x : Literal α)
-  : x.negate = ((x.1, ! x.2) : Literal α) := by
-  trivial
-
-/--
 Literal x について x.negate.negate は x に等しい
 -/
 theorem Literal.complement_complement (x : Literal α)
   : x.negate.negate = x := by
-  repeat rw [Literal.complement_sign _]
+  unfold Std.Sat.Literal.negate
   norm_num
 
 /-!
@@ -91,8 +84,8 @@ theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α)
   unfold Clause.tautology
   unfold Clause.eval
   by_contra h
-  simp_all only [List.any_eq_true, beq_iff_eq, Prod.exists, exists_eq_right', not_forall,
-    not_exists]
+  simp_all only
+    [List.any_eq_true, beq_iff_eq, Prod.exists, exists_eq_right', not_forall, not_exists]
   rcases h with ⟨ a, h1 ⟩
   have h2 : (v, a v) ∉ c := h1 v
   obtain (hav1 | hav2) : (a v = sign1 ∨ a v = sign2) := by
@@ -168,7 +161,7 @@ CNF f について f が空節を含むなら　f は Unsat
 theorem CNF.unsat_of_empty_clause (f : CNF α) :
   [] ∈ f → Unsat f := by
   intro hf
-  unfold Unsat eval
+  unfold Unsat CNF.eval
   aesop
 
 /--
@@ -182,7 +175,7 @@ theorem CNF.sat_of_same_literal (f : CNF α) (x : Literal α)
   rcases this with ⟨ a1, ha1 ⟩
   use a1
   show Sat a1 f
-  unfold Sat eval
+  unfold Sat CNF.eval
   simp only [List.all_eq_true]
   intro c hc1
   show Clause.eval a1 c = true
@@ -203,7 +196,7 @@ theorem CNF.sat_of_positive_literal (f : CNF α)
   rcases this with ⟨ a1, ha1 ⟩
   use a1
   show Sat a1 f
-  unfold Sat eval
+  unfold Sat CNF.eval
   simp only [List.all_eq_true]
   intro c hc1
   show Clause.eval a1 c = true

@@ -3,9 +3,15 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib
+import Init.Data.Nat
+import Mathlib.Data.Nat.Prime.Defs
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Set.Basic
+import Mathlib.Algebra.Ring.Parity
 
 /-!
+# 素数モノサシ
+
 完備な素数モノサシが有限個しか存在しないことの証明。
 
 素数モノサシとは、両端を除く内部の目盛りが素数の位置にあるモノサシである。
@@ -67,7 +73,7 @@ theorem prime_ge_3_is_odd
   (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3)
   : Odd p := by
   rcases Nat.Prime.eq_two_or_odd' hp with hp_eq_2 | hp_odd
-  case _ => bound
+  case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
   case _ => exact hp_odd
 
 /--
@@ -78,7 +84,7 @@ theorem prime_ge_5_is_1_or_5_mod_6
   : (p % 6 = 1) ∨ (p % 6 = 5) := by
   have hp_odd : (p % 2 = 1) := by
     rcases Nat.Prime.eq_two_or_odd hp
-    case _ => bound
+    case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
     case _ => assumption
   have h_a : (p % 6 = 1 ↔ p % 2 = 1 ∧ p % 3 = 1) := by omega
   have h_b : (p % 6 = 5 ↔ p % 2 = 1 ∧ p % 3 = 2) := by omega
@@ -107,18 +113,18 @@ lemma marks_bound
   have hm2_in := ruler.marksInside m2
   constructorm* _ ∧ _
   case _ =>
-    bound
+    simp_all only [Nat.zero_le]
   case _ =>
-    bound
+    gcongr
   case _ =>
     rcases hm2 with hm21 | hm22 | hm23
     case _ =>
       have := hm2_in hm21
-      bound
+      omega
     case _ =>
-      bound
+      omega
     case _ =>
-      bound
+      simp_all only [lt_self_iff_false, and_false, imp_false, le_refl]
 
 /--
 長さ len ≥ 6 の完備素数モノサシは len = 素数 + 1 である
@@ -137,7 +143,7 @@ lemma len_cpr_is_prime_plus_one
   have measure_len_sub_1 : (canMeasure ruler d) := by
     apply complete
     constructor
-    · bound
+    · omega
     · omega
   have mark_at_len_sub_1 : (d ∈ ruler.marks) := by
     rcases measure_len_sub_1 with ⟨m1, m2, hm⟩
@@ -146,14 +152,15 @@ lemma len_cpr_is_prime_plus_one
     have m2_ne_len : (m2 ≠ ruler.len) := by
       by_contra m2_eq_len
       have : m1 = 1 := by omega
-      have : Nat.Prime 1 := by bound
+      unfold PrimeNumberRuler at primes
+      have : Nat.Prime 1 := by grind
       contradiction
     have : (m2 = d) := by omega
     rw [this] at bounds h2
-    simp_all only [ge_iff_le, zero_le, true_and, Nat.add_eq_right, ne_eq, true_or, or_true,
+    simp_all only [ge_iff_le, Nat.zero_le, true_and, Nat.add_eq_right, ne_eq, true_or, or_true,
       or_false]
-    have : (d > 0) := by bound
-    bound
+    have : (d > 0) := by omega
+    grind
   exact primes (ruler.len - 1) mark_at_len_sub_1
 
 /--
@@ -196,7 +203,7 @@ lemma cpr_measure_odd
   have bounds := marks_bound ruler d m1 m2 hm
   have len_even : (Even ruler.len) := len_cpr_is_even ruler hr hcpr
   have oe : (Odd m2 ↔ Even m1) := by
-    have : m1 ≤ m2 := by bound
+    have : m1 ≤ m2 := by omega
     rw [← Nat.odd_sub this]
     aesop
   rcases hm with ⟨ hm1, hm2, hm ⟩
@@ -209,11 +216,11 @@ lemma cpr_measure_odd
       have m1_eq_2 : m1 = 2 := by
         rcases Nat.Prime.eq_two_or_odd' m1p with hm1_eq_2 | hm1_odd
         case _ =>
-          bound
+          gcongr
         case _ =>
           have : Odd m2 := by
             have : m1 ≥ 2 := by exact Nat.Prime.two_le m1p
-            have : m2 ≥ 3 := by bound
+            have : m2 ≥ 3 := by omega
             apply prime_ge_3_is_odd m2 m2p this
           rw [oe] at this
           rw [← Nat.not_odd_iff_even] at this
@@ -221,11 +228,12 @@ lemma cpr_measure_odd
       rw [m1_eq_2] at hm
       apply Or.inr
       apply Or.inl
-      have : m2 = d + 2 := by bound
+      have : m2 = d + 2 := by omega
       rw [← this]
       exact m2p
     case _ => -- m2 = 0
-      bound
+      simp_all only [ge_iff_le, gt_iff_lt, Nat.zero_le, and_self, Nat.not_odd_zero, false_iff,
+        Nat.not_even_iff_odd, Nat.add_eq_zero_iff, zero_add, Nat.sub_zero, true_or]
     case _ => -- m2 = ruler.len
       apply Or.inr
       apply Or.inr
@@ -241,7 +249,7 @@ lemma cpr_measure_odd
       case _ =>
         exact hcpr.left m2 hm21
       case _ =>
-        bound
+        simp_all only [lt_self_iff_false]
       case _ =>
         rw [← hm23, ← Nat.not_odd_iff_even] at len_even
         contradiction
@@ -251,9 +259,9 @@ lemma cpr_measure_odd
     simp_all only
   case _ => -- m1 = ruler.len
     rw [hm13] at hm
-    have hm2 : (m2 ∈ ruler.marks) := by bound
+    have hm2 : (m2 ∈ ruler.marks) := by omega
     have := by apply ruler.marksInside m2 hm2
-    bound
+    omega
 
 /--
 長さ len ≥ 6 の完備素数モノサシは len ≤ 122
@@ -262,7 +270,7 @@ theorem cpr_len_limit
   (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
   : (ruler.len ≤ 122) := by
   by_contra
-  have hlen : ruler.len ≥ 123 := by bound
+  have hlen : ruler.len ≥ 123 := by omega
   rcases (len_cpr_is_0_or_2_mod_6 ruler hr hcpr) with hlen0 | hlen2
   case _ => -- ruler.len % 6 = 0
     let d := 33
@@ -273,10 +281,10 @@ theorem cpr_len_limit
     have := cpr_measure_odd ruler hr hcpr d hd
     rcases this with hd1 | hd2 | hd3
     case _ =>
-      have : ¬ Nat.Prime d := by norm_num
+      have : ¬ Nat.Prime d := by decide
       contradiction
     case _ =>
-      have : ¬ Nat.Prime (d + 2) := by norm_num
+      have : ¬ Nat.Prime (d + 2) := by decide
       contradiction
     case _ =>
       let p := ruler.len - d
@@ -294,10 +302,10 @@ theorem cpr_len_limit
     have := cpr_measure_odd ruler hr hcpr d hd
     rcases this with hd1 | hd2 | hd3
     case _ =>
-      have : ¬ Nat.Prime d := by norm_num
+      have : ¬ Nat.Prime d := by decide
       contradiction
     case _ =>
-      have : ¬ Nat.Prime (d + 2) := by norm_num
+      have : ¬ Nat.Prime (d + 2) := by decide
       contradiction
     case _ =>
       let p := ruler.len - d

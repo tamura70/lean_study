@@ -22,8 +22,54 @@ import Mathlib.Algebra.Ring.Parity
 - https://tamura70.gitlab.io/papers/pdf/pnr.pdf
 -/
 
+/-!
+素数
+-/
+
 section
 
+/--
+素数 p について p ≥ 3 のとき Odd p
+-/
+theorem prime_ge_3_is_odd
+  (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3)
+  : Odd p := by
+  rcases Nat.Prime.eq_two_or_odd' hp with hp_eq_2 | hp_odd
+  case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
+  case _ => exact hp_odd
+
+/--
+素数 p について p ≥ 5 のとき p % 6 = 1 or 5
+-/
+theorem prime_ge_5_is_1_or_5_mod_6
+  (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5)
+  : (p % 6 = 1) ∨ (p % 6 = 5) := by
+  have hp_odd : (p % 2 = 1) := by
+    rcases Nat.Prime.eq_two_or_odd hp
+    case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
+    case _ => assumption
+  have h_a : (p % 6 = 1 ↔ p % 2 = 1 ∧ p % 3 = 1) := by omega
+  have h_b : (p % 6 = 5 ↔ p % 2 = 1 ∧ p % 3 = 2) := by omega
+  have h_c : (p % 3 ≠ 0 → p % 3 = 1 ∨ p % 3 = 2) := by omega
+  rw [h_a, h_b, hp_odd]
+  simp only [true_and]
+  apply h_c
+  show p % 3 ≠ 0
+  by_contra hp_ne_0_mod_3
+  have hp_eq_3 : p = 3 := by
+    rw [← Nat.Prime.dvd_iff_eq hp]
+    · exact Nat.dvd_of_mod_eq_zero hp_ne_0_mod_3
+    · trivial
+  rw [hp_eq_3] at h5
+  contradiction
+
+end
+
+/-!
+素数モノサシ
+-/
+
+section
 /--
 SparseRuler の定義。目盛りの位置は任意。
 -/
@@ -65,41 +111,6 @@ SparseRuler が完備素数モノサシである条件
 -/
 def CompletePrimeNumberRuler (ruler : SparseRuler) : Prop :=
   (PrimeNumberRuler ruler) ∧ (CompleteRuler ruler)
-
-/--
-素数 p について p ≥ 3 のとき Odd p
--/
-theorem prime_ge_3_is_odd
-  (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3)
-  : Odd p := by
-  rcases Nat.Prime.eq_two_or_odd' hp with hp_eq_2 | hp_odd
-  case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
-  case _ => exact hp_odd
-
-/--
-素数 p について p ≥ 5 のとき p % 6 = 1 or 5
--/
-theorem prime_ge_5_is_1_or_5_mod_6
-  (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5)
-  : (p % 6 = 1) ∨ (p % 6 = 5) := by
-  have hp_odd : (p % 2 = 1) := by
-    rcases Nat.Prime.eq_two_or_odd hp
-    case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
-    case _ => assumption
-  have h_a : (p % 6 = 1 ↔ p % 2 = 1 ∧ p % 3 = 1) := by omega
-  have h_b : (p % 6 = 5 ↔ p % 2 = 1 ∧ p % 3 = 2) := by omega
-  have h_c : (p % 3 ≠ 0 → p % 3 = 1 ∨ p % 3 = 2) := by omega
-  rw [h_a, h_b, hp_odd]
-  simp only [true_and]
-  apply h_c
-  show p % 3 ≠ 0
-  by_contra hp_ne_0_mod_3
-  have hp_eq_3 : p = 3 := by
-    rw [← Nat.Prime.dvd_iff_eq hp]
-    · exact Nat.dvd_of_mod_eq_zero hp_ne_0_mod_3
-    · trivial
-  rw [hp_eq_3] at h5
-  contradiction
 
 /--
 SparseRuler で目盛り m1 から m2 で長さ d が測れるときに成り立つ範囲を示す

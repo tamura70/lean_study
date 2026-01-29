@@ -12,15 +12,10 @@ SAT solver および SAT encoding に関する定理を示す。
 -/
 section
 
-open Std
-open Sat
-open Literal
-open CNF
-open Clause
-
-#print Literal
-#print Clause
-#print CNF
+open Std.Sat
+open Std.Sat.Literal
+open Std.Sat.CNF
+open Std.Sat.CNF.Clause
 
 /-!
 Literal

@@ -3,7 +3,6 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-module
 import Mathlib
 
 /-
@@ -13,6 +12,7 @@ import Mathlib
 完備な素数モノサシは、両端を含めた2つの目盛り間で、
 1からモノサシの長さまですべての長さを測れるモノサシである。
 ここでは、完備な素数モノサシの長さが122以下であることを証明する。
+
 
 - https://tamura70.gitlab.io/papers/pdf/pnr.pdf
 -/
@@ -247,9 +247,9 @@ lemma cpr_measure_odd
         rw [← hm23, ← Nat.not_odd_iff_even] at len_even
         contradiction
     apply Or.inl
-    show Nat.Prime d
-    rw [hm]
-    exact m2p
+    show Nat.Prime m2
+    rw [← hm]
+    simp_all only
   case _ => -- m1 = ruler.len
     rw [hm13] at hm
     have hm2 : (m2 ∈ ruler.marks) := by bound

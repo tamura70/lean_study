@@ -5,7 +5,7 @@ Authors: Naoyuki Tamura
 -/
 import Mathlib
 
-/-
+/-!
 Under Construction
 
 0 から始めて、単項関数 sin, cos, tan, asin, atan, inv, squ, sqrt, pow, log を
@@ -59,7 +59,7 @@ lemma add_one' {x : Real} (hx : x ≥ 0)
     grind
   · bound
 
-/-
+/--
 x ≥ 0 のとき (squ ∘ inv ∘ cos ∘ atan ∘ sqrt) x は x + 1 に等しい
 -/
 lemma add_one {x : Real} (hx : x ≥ 0)
@@ -77,7 +77,7 @@ lemma neg' {x : Real}
   · field_simp
   · positivity
 
-/-
+/--
 (log ∘ inv ∘ pow) x は - x に等しい
 -/
 lemma neg {x : Real}
@@ -86,8 +86,6 @@ lemma neg {x : Real}
     norm_num
   rw [this]
   exact neg'
-
-
 
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html

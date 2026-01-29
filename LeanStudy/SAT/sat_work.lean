@@ -5,7 +5,7 @@ Authors: Naoyuki Tamura
 -/
 import Mathlib
 
-/-
+/-!
 Under Constructio
 
 SAT solver および SAT encoding に関する定理を示す。
@@ -22,55 +22,55 @@ open CNF
 #print Std.Sat.CNF.Clause
 #print Std.Sat.CNF
 
-/-
-  Literal
+/-!
+Literal
 -/
 
-/-
-  Literal x について x.negate は Literal の符号を反転する
+/--
+Literal x について x.negate は Literal の符号を反転する
 -/
 theorem Literal.complement_sign (x : Literal α)
   : x.negate = ((x.1, ! x.2) : Literal α) := by
   trivial
 
-/-
-  Literal x について x.negate.negate は x に等しい
+/--
+Literal x について x.negate.negate は x に等しい
 -/
 theorem Literal.complement_complement (x : Literal α)
   : x.negate.negate = x := by
   repeat rw [Literal.complement_sign _]
   norm_num
 
-/-
-  Clause
+/-!
+Clause
 -/
 
-/-
-  Clause c の unsat の定義: すべての付値 a :　α → Bool に対して Clause.eval a c の値が false
+/--
+Clause c の unsat の定義: すべての付値 a :　α → Bool に対して Clause.eval a c の値が false
 -/
 def Clause.unsat (c : Clause α) :=
   ∀ (a : α → Bool), Clause.eval a c = false
 
-/-
-  Clause c の sat の定義: ある付値 a :　α → Bool に対して Clause.eval a c の値が true
+/--
+Clause c の sat の定義: ある付値 a :　α → Bool に対して Clause.eval a c の値が true
 -/
 def Clause.sat (c : Clause α) :=
   ∃ (a : α → Bool), Clause.eval a c = true
 
-/-
-  Clause c の tautology の定義: すべての付値 a : α → Bool に対して Clause.eval a c の値が true
+/--
+Clause c の tautology の定義: すべての付値 a : α → Bool に対して Clause.eval a c の値が true
 -/
 def Clause.tautology (c : Clause α) :=
   ∀ (a : α → Bool), Clause.eval a c = true
 
-/-
-  Clause c1, c2 の equiv の定義: すべての付値 a :　α → Bool に対して Clause.eval の値が等しい
+/--
+Clause c1, c2 の equiv の定義: すべての付値 a :　α → Bool に対して Clause.eval の値が等しい
 -/
 def Clause.equiv (c1 c2 : Clause α) :=
   ∀ (a : α → Bool), Clause.eval a c1 = Clause.eval a c2
 
-/-
-  Clause c が空なら c は unsat
+/--
+Clause c が空なら c は unsat
 -/
 theorem Clause.unsat_of_empty (c : Clause α)
   : c = [] → Clause.unsat c := by
@@ -79,8 +79,8 @@ theorem Clause.unsat_of_empty (c : Clause α)
   unfold Clause.unsat
   norm_num
 
-/-
-  Clause c が Literal x と x.negate を含むなら c は tautology
+/--
+Clause c が Literal x と x.negate を含むなら c は tautology
 -/
 theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α)
   : x ∈ c → x.negate ∈ c → Clause.tautology c := by
@@ -106,16 +106,16 @@ theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α)
     rw [hav2] at h2
     bound
 
-/-
-  Clause.equiv の交換律
+/--
+Clause.equiv の交換律
 -/
 theorem Clause.equiv_comm (c1 c2 : Clause α)
   : Clause.equiv c1 c2 ↔ Clause.equiv c2 c1 := by
   unfold Clause.equiv
   aesop
 
-/-
-  Clause.equiv の推移律
+/--
+Clause.equiv の推移律
 -/
 theorem Clause.equiv_trans (c1 c2 c3 : Clause α)
   : Clause.equiv c1 c2 → Clause.equiv c2 c3 → Clause.equiv c1 c3 := by
@@ -123,8 +123,8 @@ theorem Clause.equiv_trans (c1 c2 c3 : Clause α)
   intros
   simp_all only
 
-/-
-  Clause c1, c2 について c1 ⊆ c2 で c2 ⊆ c1 なら c1 と c2 は equiv
+/--
+Clause c1, c2 について c1 ⊆ c2 で c2 ⊆ c1 なら c1 と c2 は equiv
 -/
 theorem Clause.equiv_of_same_sets (c1 c2 : Clause α)
   : List.Subset c1 c2 → List.Subset c2 c1 → Clause.equiv c1 c2 := by
@@ -158,12 +158,12 @@ theorem Clause.equiv_of_same_sets (c1 c2 : Clause α)
       intro h
       simp_all only
 
-/-
-  CNF
+/-!
+CNF
 -/
 
-/-
-  CNF f について f が空節を含むなら　f は Unsat
+/--
+CNF f について f が空節を含むなら　f は Unsat
 -/
 theorem CNF.unsat_of_empty_clause (f : CNF α) :
   [] ∈ f → Unsat f := by
@@ -171,8 +171,8 @@ theorem CNF.unsat_of_empty_clause (f : CNF α) :
   unfold Unsat eval
   aesop
 
-/-
-  CNF f と Literal x について f のすべての Clause が x を含むなら　f は Sat
+/--
+CNF f と Literal x について f のすべての Clause が x を含むなら　f は Sat
 -/
 theorem CNF.sat_of_same_literal (f : CNF α) (x : Literal α)
   : (∀ c, c ∈ f → x ∈ c) → (∃ a, CNF.Sat a f) := by
@@ -192,8 +192,8 @@ theorem CNF.sat_of_same_literal (f : CNF α) (x : Literal α)
   rw [ha1]
   simp_all only
 
-/-
-  CNF f について f のすべての Clause が正リテラルを含むなら f は Sat
+/--
+CNF f について f のすべての Clause が正リテラルを含むなら f は Sat
 -/
 theorem CNF.sat_of_positive_literal (f : CNF α)
   : (∀ c, c ∈ f → (∃ x ∈ c, x.2 = true)) → (∃ a, CNF.Sat a f) := by

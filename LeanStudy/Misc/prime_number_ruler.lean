@@ -5,7 +5,7 @@ Authors: Naoyuki Tamura
 -/
 import Mathlib
 
-/-
+/-!
 完備な素数モノサシが有限個しか存在しないことの証明。
 
 素数モノサシとは、両端を除く内部の目盛りが素数の位置にあるモノサシである。
@@ -13,13 +13,12 @@ import Mathlib
 1からモノサシの長さまですべての長さを測れるモノサシである。
 ここでは、完備な素数モノサシの長さが122以下であることを証明する。
 
-
 - https://tamura70.gitlab.io/papers/pdf/pnr.pdf
 -/
 
 section
 
-/-
+/--
 SparseRuler の定義。目盛りの位置は任意。
 -/
 @[ext]
@@ -28,7 +27,7 @@ structure SparseRuler where
   marks : Set Nat
   marksInside : ∀ m : Nat, m ∈ marks → (0 < m ∧ m < len)
 
-/-
+/--
 SparseRuler で m1 から m2 の目盛り間で長さ d を測れる条件
 -/
 def measure_d (ruler : SparseRuler) (d m1 m2 : Nat) : Prop :=
@@ -36,32 +35,32 @@ def measure_d (ruler : SparseRuler) (d m1 m2 : Nat) : Prop :=
     ∧ (m2 ∈ ruler.marks ∨ m2 = 0 ∨ m2 = ruler.len)
     ∧ m1 + d = m2
 
-/-
+/--
 SparseRuler で長さ d を測れる条件
 -/
 def canMeasure (ruler : SparseRuler) (d : Nat) : Prop :=
     ∃ (m1 m2 : Nat),
     measure_d ruler d m1 m2
 
-/-
+/--
 SparseRuler が完備である条件
 -/
 def CompleteRuler (ruler : SparseRuler) : Prop :=
   ∀ d : Nat, (0 < d ∧ d < ruler.len) → (canMeasure ruler d)
 
-/-
+/--
 SparseRuler が素数モノサシである条件
 -/
 def PrimeNumberRuler (ruler : SparseRuler) : Prop :=
   ∀ m ∈ ruler.marks, Nat.Prime m
 
-/-
+/--
 SparseRuler が完備素数モノサシである条件
 -/
 def CompletePrimeNumberRuler (ruler : SparseRuler) : Prop :=
   (PrimeNumberRuler ruler) ∧ (CompleteRuler ruler)
 
-/-
+/--
 素数 p について p ≥ 3 のとき Odd p
 -/
 theorem prime_ge_3_is_odd
@@ -71,7 +70,7 @@ theorem prime_ge_3_is_odd
   case _ => bound
   case _ => exact hp_odd
 
-/-
+/--
 素数 p について p ≥ 5 のとき p % 6 = 1 or 5
 -/
 theorem prime_ge_5_is_1_or_5_mod_6
@@ -96,7 +95,7 @@ theorem prime_ge_5_is_1_or_5_mod_6
   rw [hp_eq_3] at h5
   contradiction
 
-/-
+/--
 SparseRuler で目盛り m1 から m2 で長さ d が測れるときに成り立つ範囲を示す
 -/
 lemma marks_bound
@@ -121,7 +120,7 @@ lemma marks_bound
     case _ =>
       bound
 
-/-
+/--
 長さ len ≥ 6 の完備素数モノサシは len = 素数 + 1 である
 -/
 lemma len_cpr_is_prime_plus_one
@@ -157,7 +156,7 @@ lemma len_cpr_is_prime_plus_one
     bound
   exact primes (ruler.len - 1) mark_at_len_sub_1
 
-/-
+/--
 長さ len ≥ 6 の完備素数モノサシは len % 6 = 0 or 2 である
 -/
 lemma len_cpr_is_0_or_2_mod_6
@@ -170,7 +169,7 @@ lemma len_cpr_is_0_or_2_mod_6
   have := a hp.left
   omega
 
-/-
+/--
 長さ len ≥ 6 の完備素数モノサシは Even len である
 -/
 lemma len_cpr_is_even
@@ -184,7 +183,7 @@ lemma len_cpr_is_even
   case _ =>
     omega
 
-/-
+/--
 長さ len ≥ 6 の完備素数モノサシで、奇数長さ d を測れるなら
 Prime d ∨ Prime (d + 2) ∨ Prime (len - d) である
 -/
@@ -256,7 +255,7 @@ lemma cpr_measure_odd
     have := by apply ruler.marksInside m2 hm2
     bound
 
-/-
+/--
 長さ len ≥ 6 の完備素数モノサシは len ≤ 122
 -/
 theorem cpr_len_limit

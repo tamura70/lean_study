@@ -1,6 +1,15 @@
+/-
+Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Naoyuki Tamura
+-/
 import Mathlib
-import Mathlib.Data.List.Dedup
 
+/-
+Under Constructio
+
+SAT solver および SAT encoding に関する定理を示す。
+-/
 section
 
 open Std

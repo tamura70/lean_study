@@ -1,7 +1,7 @@
 name = "lean_study"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["LeanStudy"]
+# defaultTargets = ["LeanStudy"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -14,5 +14,5 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.27.0"
 
-[[lean_lib]]
-name = "LeanStudy"
+# [[lean_lib]]
+# name = "LeanStudy"

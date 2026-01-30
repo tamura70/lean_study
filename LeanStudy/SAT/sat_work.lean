@@ -3,10 +3,10 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib
+import Mathlib.Tactic.NormNum
 
 /-!
-Under Constructio
+Under Construction
 
 SAT solver および SAT encoding に関する定理を示す。
 -/
@@ -84,15 +84,15 @@ theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α)
   rcases h with ⟨ a, h1 ⟩
   have h2 : (v, a v) ∉ c := h1 v
   obtain (hav1 | hav2) : (a v = sign1 ∨ a v = sign2) := by
-    have hs : sign2 = ! sign1 := by bound
+    have hs : sign2 = ! sign1 := by trivial
     rw [hs]
     exact Bool.eq_or_eq_not (a v) sign1
   case _ =>
     rw [hav1] at h2
-    bound
+    trivial
   case _ =>
     rw [hav2] at h2
-    bound
+    trivial
 
 /--
 Clause.equiv の交換律
@@ -129,7 +129,7 @@ theorem Clause.equiv_of_same_sets (c1 c2 : Clause α)
     -- h1t : ∃ v, (v, a v) ∈ c1
     rcases h1t with ⟨ v, hv ⟩
     use v
-    exact Multiset.mem_coe.mp (hs12 (hs21 (hs12 hv)))
+    tauto
   case _ =>
     rw [h1f]
     symm
@@ -197,5 +197,21 @@ theorem CNF.sat_of_positive_literal (f : CNF α)
   show Clause.eval a1 c = true
   unfold Clause.eval
   simp_all only [Prod.exists, exists_eq_right, Bool.true_beq, List.any_eq_true]
+
+/--
+充足可能性を保存する写像の定義
+-/
+def sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool)) :=
+  ∀ f, ∀ a, (CNF.Sat a f) → (CNF.Sat (ta a) (t f))
+
+/--
+充足可能性を保存する写像で変換した CNF が Unsat なら もとの CNF も Unsat
+-/
+theorem CNF.unsat_of_sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool))
+  : (sat_preserving t ta) → (∀ f : CNF α, CNF.Unsat (t f) → CNF.Unsat f) := by
+  unfold sat_preserving CNF.Unsat CNF.Sat
+  grind
+
+
 
 end

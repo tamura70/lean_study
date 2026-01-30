@@ -27,12 +27,16 @@ noncomputable def inv : ℝ → ℝ := fun x ↦ x⁻¹
 noncomputable def squ : ℝ → ℝ := fun x ↦ x ^ 2
 noncomputable def sqrt : ℝ → ℝ := fun x ↦ Real.sqrt x
 noncomputable def pow : ℝ → ℝ := fun x ↦ 10 ^ x
-noncomputable def log : ℝ → ℝ := fun x ↦ Real.log x / Real.log 10
+noncomputable def log : ℝ → ℝ := fun x ↦ Real.logb 10 x
 
 noncomputable def seq : List (ℝ → ℝ) → (ℝ → ℝ)
 | [] => fun x ↦ x
 | [f] => f
 | f::fs => (seq fs) ∘ f
+
+lemma log_pow (x : Real) : log (pow x) = x := by
+  unfold log pow
+  norm_num
 
 lemma deg_rad (d : Real) : deg (rad d) = d := by
   unfold deg rad
@@ -42,7 +46,7 @@ lemma rad_deg (x : Real) : rad (deg x) = x := by
   unfold deg rad
   field_simp
 
-lemma add_one' {x : Real} (hx : x ≥ 0)
+lemma add_one_x {x : Real} (hx : x ≥ 0)
   : (squ (inv (cos (atan (sqrt x))))) = x + 1 := by
   unfold squ inv sqrt cos atan
   have : √ x ≥ 0 := by bound
@@ -67,15 +71,15 @@ lemma add_one {x : Real} (hx : x ≥ 0)
   have : (squ ∘ inv ∘ cos ∘ atan ∘ sqrt) x = (squ (inv (cos (atan (sqrt x))))) := by
     norm_num
   rw [this]
-  exact add_one' hx
+  exact add_one_x hx
 
-lemma neg' {x : Real}
+lemma neg_x {x : Real}
   : (log (inv (pow x))) = - x := by
   unfold log inv pow
-  rw [Real.log_inv]
-  rw [Real.log_rpow]
-  · field_simp
+  rw [Real.logb_inv]
+  rw [Real.logb_rpow]
   · positivity
+  · norm_num
 
 /--
 (log ∘ inv ∘ pow) x は - x に等しい
@@ -85,12 +89,66 @@ lemma neg {x : Real}
   have : (log ∘ inv ∘ pow) x = (log (inv (pow x))) := by
     norm_num
   rw [this]
-  exact neg'
+  exact neg_x
+
+example : seq [inv, inv] = id := by
+  have : seq [inv, inv] = inv ∘ inv := by trivial
+  rw [this]
+  unfold inv
+  norm_num
+
+example : seq [pow, log] = id := by
+  have : seq [pow, log] = log ∘ pow := by trivial
+  rw [this]
+  have : (∀ x, (log ∘ pow) x = id x) → (log ∘ pow) = id := by
+    exact fun a ↦ Function.RightInverse.id a
+  apply this
+  intro x
+  unfold log pow id
+  simp_all only [Function.comp_apply, id_eq]
+  norm_num
+
+lemma seq_apply (f : ℝ → ℝ) (fs : List (ℝ → ℝ))
+  : seq (f::fs) = (seq fs) ∘ f := by
+  set x := (seq fs) ∘ f with hx
+  unfold seq
+  split
+  · trivial
+  · aesop
+  · simp_all only [imp_false, List.cons.injEq]
+
+lemma add_one_seq {x : Real} (hx : x ≥ 0) (fs : List (ℝ → ℝ))
+  : seq (sqrt::atan::cos::inv::squ::fs) x = seq fs (x + 1) := by
+  repeat rw [seq_apply]
+  simp only [Function.comp_apply]
+  rw [add_one_x hx]
+
+lemma neg_seq {x : Real} (fs : List (ℝ → ℝ))
+  : seq (pow::inv::log::fs) x = (seq fs) (- x) := by
+  repeat rw [seq_apply]
+  simp only [Function.comp_apply]
+  rw [neg_x]
+
+noncomputable def prepend_add_n (n : Nat) (fs : List (ℝ → ℝ)) : List (ℝ → ℝ) :=
+  match n with
+  | 0 => fs
+  | n' + 1 => sqrt::atan::cos::inv::squ::(prepend_add_n n' fs)
+
+theorem add_n_seq (hx : x ≥ 0) (n : Nat) (fs : List (ℝ → ℝ))
+  : seq (prepend_add_n n fs) x = seq fs (x + n) := by
+  induction n with
+  | zero =>
+    aesop
+  | succ n' h =>
+    unfold prepend_add_n
+    rw [add_one_seq hx]
+    sorry
+
 
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html
 -/
-
+n
 
 
 end

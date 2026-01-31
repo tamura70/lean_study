@@ -213,6 +213,30 @@ theorem CNF.unsat_rev_of_sat_preserving (t : CNF α → CNF β) (ta : (α → Bo
   unfold CNF.sat_preserving CNF.Unsat CNF.Sat
   grind
 
--- def CNF.to_3cnf (f : CNF α) : CNF β :=
+section
 
+-- 無限に変数が必要だから α = Nat として証明する
+variable (α := Nat)
+
+def Clause.to_3cnf (c : Clause α) : CNF α :=
+  match c with
+  | [] => []
+  | [_] => [c]
+  | [_, _] => [c]
+  | [_, _, _] => [c]
+  | x1::x2::x3::x4::xs =>
+    let y : Literal α := sorry
+    [x1,x2,y] :: to_3cnf (y.negate::x3::x4::xs)
+
+/-
+-/
+def CNF.to_3cnf (f : CNF α) : CNF α :=
+  match f with
+  | [] => []
+  | c :: f =>
+  sorry
+
+
+
+end
 end

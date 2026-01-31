@@ -201,17 +201,18 @@ theorem CNF.sat_of_positive_literal (f : CNF α)
 /--
 充足可能性を保存する写像の定義
 -/
-def sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool)) :=
-  ∀ f, ∀ a, (CNF.Sat a f) → (CNF.Sat (ta a) (t f))
+def CNF.sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool)) :=
+  ∀ f, (∀ a, (CNF.Sat a f) → (CNF.Sat (ta a) (t f)))
+        ∧ ((CNF.Unsat f) → (CNF.Unsat (t f)))
 
 /--
 充足可能性を保存する写像で変換した CNF が Unsat なら もとの CNF も Unsat
 -/
-theorem CNF.unsat_of_sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool))
-  : (sat_preserving t ta) → (∀ f : CNF α, CNF.Unsat (t f) → CNF.Unsat f) := by
-  unfold sat_preserving CNF.Unsat CNF.Sat
+theorem CNF.unsat_rev_of_sat_preserving (t : CNF α → CNF β) (ta : (α → Bool) → (β → Bool))
+  : (CNF.sat_preserving t ta) → (∀ f : CNF α, CNF.Unsat (t f) → CNF.Unsat f) := by
+  unfold CNF.sat_preserving CNF.Unsat CNF.Sat
   grind
 
-
+-- def CNF.to_3cnf (f : CNF α) : CNF β :=
 
 end

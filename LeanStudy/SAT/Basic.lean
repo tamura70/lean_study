@@ -236,6 +236,14 @@ def CNF.succ (f : CNF (Fin n)) : CNF (Fin (n + 1)) :=
 def Assignment.succ (a : Fin n → Bool) : Fin (n + 1) → Bool :=
   fun v : Fin (n + 1) => if h: v ≠ 0 then a (v.pred h) else true
 
+theorem Literal.succ_ne_0 (x : Literal (Fin n))
+  : (Literal.succ x).1 ≠ 0 := by
+  exact Ne.symm (not_eq_of_beq_eq_false rfl)
+
+theorem Clause.succ_ne_0 (c : Clause (Fin n))
+  : ∀ x ∈ Clause.succ c, ∃ x1 ∈ c, x = Literal.succ x1 := by
+  grind [= eq_def, = Literal.eq_def, = succ.eq_def]
+
 theorem Literal.in_clause_succ (x : Literal (Fin n)) (c : Clause (Fin n))
   : (x ∈ c) ↔ (Literal.succ x ∈ Clause.succ c) := by
   unfold Clause.succ Literal.succ
@@ -263,7 +271,10 @@ theorem Clause.sat_equiv_succ (a : Assignment (Fin n)) (c : Clause (Fin n))
     · trivial
   · intro h
     obtain ⟨ x1, ⟨ hx1, hx2 ⟩ ⟩ := h
-    sorry
+    apply Clause.succ_ne_0 at hx1
+    obtain ⟨ x1, ⟨ hx1, hx2 ⟩ ⟩ := hx1
+    use x1
+    aesop
 
 #check Function.update
 

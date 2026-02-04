@@ -201,7 +201,12 @@ theorem CNF.sat_of_positive_literal (f : CNF α)
   simp_all only [Prod.exists, exists_eq_right, Bool.true_eq, Bool.decide_eq_true, List.any_eq_true]
 
 theorem CNF.sat_concat (a : α → Bool) (f1 f2 : CNF α)
-  : (CNF.Sat a f1 ∧ CNF.Sat a f2) ↔ CNF.Sat a (f1 ++ f2) := by
+  : CNF.Sat a (f1 ++ f2) ↔ (CNF.Sat a f1 ∧ CNF.Sat a f2) := by
+  unfold CNF.Sat CNF.eval
+  norm_num
+
+theorem CNF.sat_flatMap (a : α → Bool) (fn : β → CNF α) (xs : List β)
+  : CNF.Sat a (List.flatMap fn xs) ↔ ∀ x ∈ xs, CNF.Sat a (fn x) := by
   unfold CNF.Sat CNF.eval
   norm_num
 

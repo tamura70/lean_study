@@ -39,34 +39,51 @@ theorem alo_iff_exists (xs : List (Literal α)) (a : Assignment α) :
     unfold Clause.eval
     grind
 
-theorem amo_iff_exists_no_two' (xs : List (Literal α)) (a : Assignment α) :
-  CNF.Sat a (at_most_one xs) →
-  List.length (List.filter (fun x => x.eval a) xs) ≤ 1 := by
-  contrapose
-  simp only [gt_iff_lt, List.length_filter_pos_iff, Prod.exists, Bool.exists_bool, not_exists,
-    not_or, not_and, Bool.not_eq_true]
-  intro h
-
-
-  unfold at_most_one
-  unfold CNF.Sat CNF.eval
-  norm_num
-  unfold
-  sorry
+lemma amo_pairs (xs : List (Literal α)) (x y : Literal α)
+    (hx : x ∈ xs) (hy : y ∈ xs) (hxy : x ≠ y) :
+  [x.negate, y.negate] ∈ (at_most_one xs) ∨ [y.negate, x.negate] ∈ (at_most_one xs) := by
+  have : (x, y) ∈ (Util.combinations2 xs) ∨ (y, x) ∈ (Util.combinations2 xs) :=
+    Util.comb2_pair xs x y hx hy hxy
+  grind [= at_most_one]
 
 theorem amo_iff_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) ↔
-  (∀ x ∈ xs, ∀ y ∈ xs, x.eval a → y.eval a → x = y) := by
-  -- unfold at_most_one
+  (∀ x ∈ xs, ∀ y ∈ xs, x ≠ y → (x.eval a = false ∨ y.eval a = false)) := by
   constructor
-  · intro h1
-    intros x hx y hy hx1 hx2
+  · intro h
+    unfold CNF.Sat at h
+    intros x hx y hy hxy
+    obtain hxy1 | hxy2 := amo_pairs xs x y hx hy hxy
+    case _ =>
+      grind
+    case _ =>
+      grind
+  · intro h
+    unfold CNF.Sat
+    rw [CNF.eval_equiv_forall]
+    intros c hc
+    unfold Clause.eval
+    rw [Clause.eval_equiv_exists]
+
+
+
+    have : (∀ c ∈ (at_most_one xs), Clause.eval a c) → (CNF.eval a (at_most_one xs)) := by
+      intros
+      unfold CNF.eval
+      simp_all only [ne_eq, Prod.forall, Bool.forall_bool, Prod.mk.injEq, not_and,
+        Bool.not_eq_false, Bool.not_eq_true, Bool.false_eq_true, imp_false, implies_true,
+        forall_const, Bool.true_eq_false, List.all_eq_true]
+    apply this
+    try?
     by_contra
-    have : ∃ c ∈ at_most_one xs, x.negate ∈ c ∧ y.negate ∈ c := by
-      unfold at_most_one
+    simp only [Bool.not_eq_true] at this
+    have : ∀ c ∈ (at_most_one xs), Clause.eval a c = false := by
+      intros c hc
+      have := this c
+      hint
       sorry
+    obtain := this
     sorry
-  · sorry
 
 theorem exo_unique (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (exact_one xs) → ∃! x ∈ xs, a x.1 = true := by

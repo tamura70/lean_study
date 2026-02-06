@@ -18,10 +18,8 @@ namespace DirectEncoder
 def at_least_one (xs : List (Literal α)) : CNF α :=
   [xs]
 
-/-
 def at_most_one' (xs : List (Literal α)) : CNF α :=
   (Util.combinations2 xs).map (fun (x1, x2) => [x1.negate, x2.negate])
--/
 
 def at_most_one : List (Literal α) → CNF α
   | [] => []
@@ -56,8 +54,7 @@ lemma amo_pairs (xs : List (Literal α)) (x y : Literal α)
   [x.negate, y.negate] ∈ (at_most_one xs) ∨ [y.negate, x.negate] ∈ (at_most_one xs) := by
   have : (x, y) ∈ (Util.combinations2 xs) ∨ (y, x) ∈ (Util.combinations2 xs) :=
     Util.comb2_pair xs x y hx hy hxy
-  hint
-  sorry
+  grind [= at_most_one]
 
 lemma amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) →
@@ -82,29 +79,6 @@ lemma amo_propagation_of_sat (xs : List (Literal α)) (a : Assignment α) :
   have := amo_exists_no_two xs a h x hx1
   simp_all
 
-/-
-lemma amo_some_pair (xs : List (Literal α)) (hxs : List.Nodup xs)  (a : Assignment α) (c : Clause α) :
-  c ∈ (at_most_one xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ c = [x.negate, y.negate] := by
-  unfold at_most_one
-  intro h
-  have := Util.comb2_some_pair xs hxs
-  sorry
-
-lemma amo_some_negative (xs : List (Literal α)) (a : Assignment α) (c : Clause α) :
-  c ∈ (at_most_one xs) → ∃ x ∈ xs, x.negate ∈ c := by
-  unfold at_most_one
-  intro h
-  induction xs with
-  | nil =>
-      trivial
-  | cons x1 xs1 ih =>
-      use x1
-      unfold Util.combinations2 at h
-
-      simp?
-      sorry
--/
-
 lemma amo_of_zero (xs : List (Literal α)) (a : Assignment α) :
   (∀ x ∈ xs, x.eval a = false) → CNF.Sat a (at_most_one xs) := by
   intro h
@@ -122,12 +96,38 @@ lemma amo_of_zero (xs : List (Literal α)) (a : Assignment α) :
 lemma amo_of_one (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
   (∃! x ∈ xs, x.eval a = true) → CNF.Sat a (at_most_one xs) := by
   intro h
-  obtain ⟨ x, ⟨ h1, h2 ⟩, h3 ⟩ := h
-  have : ∀ y ∈ xs, x ≠ y → y.eval a = false := by grind
-  unfold CNF.Sat
-  rw [CNF.eval_equiv_forall]
-  intro c hc
-  sorry
+  obtain ⟨ x, hx ⟩ := h
+  induction xs with
+  | nil =>
+    trivial
+  | cons x1 xs1 ih1 =>
+    have : x = x1 ∨ x ≠ x1 := by exact eq_or_ne x x1
+    obtain hx_eq_x1 | hx_ne_x1 := this
+    case _ =>
+      rw [hx_eq_x1] at hx
+      have : ∀ y ∈ xs1, y.eval a = false := by grind
+      have : CNF.Sat a (at_most_one xs1) := amo_of_zero xs1 a this
+      unfold at_most_one
+      rw [CNF.sat_concat]
+      aesop
+    case _ =>
+      have : x1.negate.eval a = true := by
+        rw [Literal.eval_negate a]
+        grind
+      have hcx1 : ∀ (c : Clause α), x1.negate ∈ c → Clause.eval a c = true := by
+        intro c hc
+        unfold Clause.eval
+        have : (∃ x ∈ c, x.eval a = true) → ((List.any c (fun x => x.eval a)) = true) := by
+          grind
+        apply this
+        use x1.negate
+      have : CNF.Sat a (at_most_one xs1) := by grind
+      unfold at_most_one
+      rw [CNF.sat_concat]
+      constructor
+      · unfold CNF.Sat CNF.eval
+        grind
+      · assumption
 
 theorem AMO_iff_all_false_or_uniq (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) ↔
@@ -175,8 +175,6 @@ theorem EXO_iff_unique (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assig
     · apply (AMO_iff_all_false_or_uniq xs hxs a).mpr
       simp_all
 
-
-
 def GraphColoring (G : Graph V) (c : Nat) : CNF (V × Nat) :=
   let cnf1 : CNF (V × Nat) :=
     G.vertices.flatMap
@@ -191,29 +189,10 @@ def GraphColoring (G : Graph V) (c : Nat) : CNF (V × Nat) :=
     )
   cnf1 ++ cnf2
 
-example (G : Graph V) (coloring : V → C) :
-  Graph.Coloring G coloring ↔
-  able G color → ∃ a, CNF.Sat a (GraphColoring G color) := by
-  unfold Graph.Colorable Graph.Coloring
-  intro hg
-  obtain ⟨coloring, ⟨hcol1, hcol2⟩⟩ := hg
-  let a : Assignment _ := fun (v,k) => coloring v = k
-  use a
-  unfold GraphColoring
-  simp only
-  rw [CNF.sat_concat]
-  repeat rw [CNF.sat_flatMap]
-  constructor
-  · intros v hv
-    unfold exact_one
-    rw [CNF.sat_concat]
-    constructor
-    · unfold at_least_one
-
-      sorry
-    · sorry
-    -- simp only [List.cons_append, List.nil_append]
-  · sorry
+example (G : Graph V) (coloring : V → Fin c) :
+  Graph.Coloring G coloring → ∃ a, CNF.Sat a (GraphColoring G c) := by
+  unfold Graph.Coloring
+  sorry
 
 end DirectEncoder
 

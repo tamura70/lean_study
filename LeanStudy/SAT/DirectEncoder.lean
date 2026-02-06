@@ -18,8 +18,16 @@ namespace DirectEncoder
 def at_least_one (xs : List (Literal α)) : CNF α :=
   [xs]
 
-def at_most_one (xs : List (Literal α)) : CNF α :=
+/-
+def at_most_one' (xs : List (Literal α)) : CNF α :=
   (Util.combinations2 xs).map (fun (x1, x2) => [x1.negate, x2.negate])
+-/
+
+def at_most_one : List (Literal α) → CNF α
+  | [] => []
+  | x :: xs =>
+    xs.map (fun x1 => [x.negate, x1.negate]) ++
+    at_most_one xs
 
 def exact_one (xs : List (Literal α)) : CNF α :=
   at_least_one xs ++ at_most_one xs
@@ -48,7 +56,8 @@ lemma amo_pairs (xs : List (Literal α)) (x y : Literal α)
   [x.negate, y.negate] ∈ (at_most_one xs) ∨ [y.negate, x.negate] ∈ (at_most_one xs) := by
   have : (x, y) ∈ (Util.combinations2 xs) ∨ (y, x) ∈ (Util.combinations2 xs) :=
     Util.comb2_pair xs x y hx hy hxy
-  grind [= at_most_one]
+  hint
+  sorry
 
 lemma amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) →
@@ -73,20 +82,42 @@ lemma amo_propagation_of_sat (xs : List (Literal α)) (a : Assignment α) :
   have := amo_exists_no_two xs a h x hx1
   simp_all
 
+/-
 lemma amo_some_pair (xs : List (Literal α)) (hxs : List.Nodup xs)  (a : Assignment α) (c : Clause α) :
-  c ∈ (at_most_one xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ c = [x.negate, y.negate]:= by
+  c ∈ (at_most_one xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ c = [x.negate, y.negate] := by
   unfold at_most_one
   intro h
   have := Util.comb2_some_pair xs hxs
   sorry
 
+lemma amo_some_negative (xs : List (Literal α)) (a : Assignment α) (c : Clause α) :
+  c ∈ (at_most_one xs) → ∃ x ∈ xs, x.negate ∈ c := by
+  unfold at_most_one
+  intro h
+  induction xs with
+  | nil =>
+      trivial
+  | cons x1 xs1 ih =>
+      use x1
+      unfold Util.combinations2 at h
+
+      simp?
+      sorry
+-/
+
 lemma amo_of_zero (xs : List (Literal α)) (a : Assignment α) :
   (∀ x ∈ xs, x.eval a = false) → CNF.Sat a (at_most_one xs) := by
   intro h
-  unfold CNF.Sat
-  rw [CNF.eval_equiv_forall]
-  intro c hc
-  sorry
+  induction xs with
+  | nil =>
+    trivial
+  | cons x1 xs1 ih1 =>
+    have ih1 : CNF.Sat a (at_most_one xs1) := by simp_all
+    unfold at_most_one
+    rw [CNF.sat_concat]
+    constructor
+    · aesop
+    · assumption
 
 lemma amo_of_one (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
   (∃! x ∈ xs, x.eval a = true) → CNF.Sat a (at_most_one xs) := by

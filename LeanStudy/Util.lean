@@ -6,27 +6,10 @@ namespace Util
 
 def combinations2 : List α → List (α × α)
   | [] => []
-  | x :: xs =>
-    let rec f : List α → List (α × α)
-    | [] => []
-    | x1 :: xs1 => (x, x1) :: (f xs1)
-    (f xs) ++ combinations2 xs
-
-lemma comb2_f (xs : List α) (x y : α) (hy : y ∈ xs) :
-  (x, y) ∈ combinations2.f x xs := by
-  induction xs with
-  | nil =>
-    trivial
-  | cons x1 xs1 ih =>
-    have : (y = x1) ∨ (y ∈ xs1) := by simp_all only [List.mem_cons]
-    obtain hy1 | hy2 := this
-    case _ =>
-      grind [= combinations2.f]
-    case _ =>
-      exact List.mem_of_mem_tail (ih hy2)
+  | x :: xs => (List.product [x] xs) ++ combinations2 xs
 
 theorem comb2_pair (xs : List α) (x y : α) (hx : x ∈ xs) (hy : y ∈ xs) (hxy : x ≠ y) :
-  (x, y) ∈ combinations2 xs ∨ (y, x) ∈ combinations2 xs := by
+  (x, y) ∈ (combinations2 xs) ∨ (y, x) ∈ (combinations2 xs) := by
   induction xs with
   | nil =>
     trivial
@@ -37,20 +20,36 @@ theorem comb2_pair (xs : List α) (x y : α) (hx : x ∈ xs) (hy : y ∈ xs) (hx
     case _ =>
       apply Or.inl
       unfold combinations2
-      have : (x, y) ∈ combinations2.f x xs1 := comb2_f xs1 x y h1.right
-      simp_all only [ne_eq, forall_const, List.mem_cons, true_or, or_true, List.mem_append]
+      simp_all
     case _ =>
       apply Or.inr
       unfold combinations2
-      have : (y, x) ∈ combinations2.f y xs1 := comb2_f xs1 y x h2.left
-      simp_all only [ne_eq, forall_const, List.mem_cons, or_true, true_or, List.mem_append]
+      simp_all
     case _ =>
-      unfold combinations2 combinations2.f
+      unfold combinations2
       obtain h4 | h5 := ih1 h3.left h3.right
       case _ =>
-        simp_all only [ne_eq, true_or, imp_self, List.mem_cons, or_true, List.mem_append]
+        simp_all
       case _ =>
-        simp_all only [ne_eq, or_true, imp_self, List.mem_cons, List.mem_append]
+        simp_all
+
+theorem comb2_some_pair (xs : List α) (hxs : List.Nodup xs) (xy : α × α) :
+  xy ∈ (combinations2 xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ xy = (x, y) := by
+  intro hxy
+  unfold combinations2 at hxy
+  induction xs with
+  | nil =>
+    trivial
+  | cons x1 xs1 ih1 =>
+    have : xy ∈ [x1].product xs1 ∨ xy ∈ combinations2 xs1 := by
+      aesop
+    use xy.1
+    use xy.2
+    obtain hxy1 | hxy2 := this
+    case _ =>
+      aesop
+    case _ =>
+      grind [= combinations2]
 
 end Util
 end

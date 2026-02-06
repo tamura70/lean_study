@@ -3,6 +3,7 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
+import Mathlib.Logic.ExistsUnique
 import Mathlib.Tactic
 import LeanStudy.SAT.Basic
 import LeanStudy.SAT.Graph
@@ -26,7 +27,7 @@ def exact_one (xs : List (Literal α)) : CNF α :=
 #eval at_least_one ([1, 2, 3].map (fun i => (i, true)))
 #eval at_most_one ([1, 2, 3].map (fun i => (i, true)))
 
-theorem alo_iff_exists (xs : List (Literal α)) (a : Assignment α) :
+theorem ALO_iff_exists (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (at_least_one xs) ↔ ∃ x ∈ xs, x.eval a := by
   unfold at_least_one
   constructor
@@ -49,7 +50,7 @@ lemma amo_pairs (xs : List (Literal α)) (x y : Literal α)
     Util.comb2_pair xs x y hx hy hxy
   grind [= at_most_one]
 
-theorem amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
+lemma amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) →
   (∀ x ∈ xs, ∀ y ∈ xs, x ≠ y → (x.eval a = false ∨ y.eval a = false)) := by
   intro h
@@ -61,95 +62,89 @@ theorem amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
   case _ =>
     grind
 
-theorem amo_iff_exists_no_two (xs : List (Literal α)) (a : Assignment α) (hxs : List.Nodup xs):
+abbrev amo_propagation (xs : List (Literal α)) (a : Assignment α) :=
+  ∀ x ∈ xs, Literal.eval a x = true → (∀ y ∈ xs, x ≠ y → y.eval a = false)
+
+lemma amo_propagation_of_sat (xs : List (Literal α)) (a : Assignment α) :
+  (CNF.Sat a (at_most_one xs)) → amo_propagation xs a := by
+  intro h
+  unfold amo_propagation
+  intro x hx1 hx2
+  have := amo_exists_no_two xs a h x hx1
+  simp_all
+
+lemma amo_some_pair (xs : List (Literal α)) (hxs : List.Nodup xs)  (a : Assignment α) (c : Clause α) :
+  c ∈ (at_most_one xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ c = [x.negate, y.negate]:= by
+  unfold at_most_one
+  intro h
+  have := Util.comb2_some_pair xs hxs
+  sorry
+
+lemma amo_of_zero (xs : List (Literal α)) (a : Assignment α) :
+  (∀ x ∈ xs, x.eval a = false) → CNF.Sat a (at_most_one xs) := by
+  intro h
+  unfold CNF.Sat
+  rw [CNF.eval_equiv_forall]
+  intro c hc
+  sorry
+
+lemma amo_of_one (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
+  (∃! x ∈ xs, x.eval a = true) → CNF.Sat a (at_most_one xs) := by
+  intro h
+  obtain ⟨ x, ⟨ h1, h2 ⟩, h3 ⟩ := h
+  have : ∀ y ∈ xs, x ≠ y → y.eval a = false := by grind
+  unfold CNF.Sat
+  rw [CNF.eval_equiv_forall]
+  intro c hc
+  sorry
+
+theorem AMO_iff_all_false_or_uniq (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
   CNF.Sat a (at_most_one xs) ↔
   (∀ x ∈ xs, x.eval a = false) ∨ (∃! x ∈ xs, x.eval a = true) := by
-
-  have : (∀ x ∈ xs, ∀ y ∈ xs, x ≠ y → (x.eval a = false ∨ y.eval a = false)) →
-    (∀ x ∈ xs, x.eval a = false) ∨ (∃! x ∈ xs, x.eval a = true) := by
-    unfold Literal.eval
-    intro h
-    by_contra
-    norm_num at this
-    obtain ⟨ h1, h2 ⟩ := this
-    obtain ⟨ v, hv ⟩ := h1
-    have : (v, false) ∈ xs ∨ (v, true) ∈ xs := by tauto
-    obtain hv1 | hv2 := this
-    case _ =>
-      have h := h (v, false) hv1
-      sorry
-    case _ =>
-      sorry
-
-    sorry
-
-  induction xs with
-  | nil =>
-    bound
-  | cons x1 xs1 ih1 =>
-    induction xs1 with
-    | nil =>
-      unfold at_most_one Util.combinations2 Util.combinations2.f Util.combinations2
-      simp [*] at *
-      have : (x1.eval a) = true ∨ (x1.eval a) = false := by
-        exact Bool.eq_false_or_eq_true (Literal.eval a x1)
-      unfold Literal.eval at this
-      simp at this
-      obtain hx1 | hx2 := this
-      case _ =>
-        apply Or.inr
-        use x1
-        simp_all only [and_self, implies_true]
-      case _ =>
-        apply Or.inl
-        assumption
-    | cons x2 xs2 ih2 =>
-      have : x1 ≠ x2 := by
-        simp only [List.nodup_cons, List.mem_cons, not_or] at hxs
-        exact hxs.left.left
-      constructor
-      · intro h
-        let xs := x1 :: x2 :: xs2
-        have : x1 ∈ xs := by tauto
-        have : x2 ∈ xs := by tauto
-        have : x1.eval a = false ∨ x2.eval a = false := by
-          apply amo_exists_no_two xs a at h
-          have h := h x1 ‹x1 ∈ xs› x2 ‹x2 ∈ xs› ‹x1 ≠ x2›
-          assumption
-        simp_all?
-        sorry
-      · sorry
-
-
   constructor
   · intro h
-    apply amo_exists_no_two xs a at h
-    induction xs with
-    | nil =>
-      norm_num
-    | cons x1 xs1 ih1 =>
-      have h := h x1
-      induction xs1 with
-      | nil =>
-        simp_all only [List.not_mem_nil, ne_eq, decide_eq_false_iff_not, forall_const, isEmpty_prod,
-          not_isEmpty_of_nonempty, or_true, IsEmpty.forall_iff, implies_true, decide_eq_true_eq,
-          false_and, existsUnique_false, or_false, List.mem_cons, not_true_eq_false,
-          or_self, forall_eq]
-        have : a x1.1 = true ∨ a x1.1 = false := by norm_num
-        obtain hx1 | hx2 := this
-        case _ =>
-          rw [hx1]
-          simp only [Bool.true_eq, Bool.not_eq_true]
-          sorry
-        case _ =>
-          sorry
-      | cons x2 xs2 ih2 =>
-        sorry
-  · sorry
+    have : (∀ x ∈ xs, x.eval a = false) ∨ (∃ x ∈ xs, x.eval a = true) := by grind
+    obtain h1 | h2 := this
+    case _ =>
+      apply Or.inl
+      assumption
+    case _ =>
+      apply Or.inr
+      obtain ⟨ x, hx1, hx2 ⟩ := h2
+      use x
+      have hp := (amo_propagation_of_sat xs a h) x hx1 hx2
+      grind
+  · intro h
+    obtain h1 | h2 := h
+    case _ =>
+      apply amo_of_zero
+      assumption
+    case _ =>
+      apply amo_of_one xs hxs a
+      assumption
 
-theorem exo_unique (xs : List (Literal α)) (a : Assignment α) :
-  CNF.Sat a (exact_one xs) → ∃! x ∈ xs, a x.1 = true := by
-  sorry
+theorem EXO_iff_unique (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
+  CNF.Sat a (exact_one xs) ↔ ∃! x ∈ xs, x.eval a = true := by
+  unfold exact_one
+  rw [CNF.sat_concat]
+  constructor
+  · intro h
+    obtain ⟨ h1, h2 ⟩ := h
+    apply (ALO_iff_exists xs a).mp at h1
+    apply (AMO_iff_all_false_or_uniq xs hxs a).mp at h2
+    obtain h2z | h2o := h2
+    case _ =>
+      grind
+    case _ =>
+      gcongr
+  · intro h
+    and_intros
+    · apply (ALO_iff_exists xs a).mpr
+      exact ExistsUnique.exists h
+    · apply (AMO_iff_all_false_or_uniq xs hxs a).mpr
+      simp_all
+
+
 
 def GraphColoring (G : Graph V) (c : Nat) : CNF (V × Nat) :=
   let cnf1 : CNF (V × Nat) :=
@@ -165,8 +160,9 @@ def GraphColoring (G : Graph V) (c : Nat) : CNF (V × Nat) :=
     )
   cnf1 ++ cnf2
 
-example (G : Graph V) (color : Nat) :
-  Graph.Colorable G color → ∃ a, CNF.Sat a (GraphColoring G color) := by
+example (G : Graph V) (coloring : V → C) :
+  Graph.Coloring G coloring ↔
+  able G color → ∃ a, CNF.Sat a (GraphColoring G color) := by
   unfold Graph.Colorable Graph.Coloring
   intro hg
   obtain ⟨coloring, ⟨hcol1, hcol2⟩⟩ := hg

@@ -3,6 +3,8 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
+import Mathlib.Tactic
+
 section
 
 theorem mod_eq {n m1 m2 r : Nat} (h1 : n % m1 = r) (h2 : m1 % m2 = 0) :

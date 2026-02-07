@@ -3,7 +3,9 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 
 /-!
 Under Construction
@@ -148,7 +150,6 @@ theorem add_n_seq (hx : x ≥ 0) (n : Nat) (fs : List (ℝ → ℝ))
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html
 -/
-n
 
 
 end

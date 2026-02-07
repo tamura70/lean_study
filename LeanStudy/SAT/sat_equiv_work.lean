@@ -3,7 +3,7 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib.Tactic
+-- import Mathlib.Tactic
 import LeanStudy.SAT.Basic
 
 namespace SAT

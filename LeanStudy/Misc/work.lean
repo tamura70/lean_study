@@ -3,7 +3,7 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib.Tactic
+-- import Mathlib.Tactic
 
 section
 
@@ -74,10 +74,6 @@ example (n : Nat) (hn : (n % 2 = 0) → (n % 3 = 0)) : (n % 2 = 1) ∨ (n % 6 = 
   simp_all only [not_or, Nat.mod_two_not_eq_one, forall_const]
   have ⟨ hn1, hn2 ⟩ := hn
   omega
-
-
-
-
 
 
 

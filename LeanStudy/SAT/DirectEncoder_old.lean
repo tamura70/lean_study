@@ -3,11 +3,11 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
--- import Mathlib.Logic.ExistsUnique
--- import Mathlib.Tactic.NormNum
+import Mathlib.Logic.ExistsUnique
+import Mathlib.Tactic
 import LeanStudy.SAT.Basic
--- import LeanStudy.SAT.Graph
--- import LeanStudy.Util
+import LeanStudy.SAT.Graph
+import LeanStudy.Util
 
 section
 
@@ -63,6 +63,7 @@ lemma amo_exists_no_two (xs : List (Literal α)) (a : Assignment α) :
     grind
   case _ =>
     grind
+-/
 
 abbrev amo_propagation (xs : List (Literal α)) (a : Assignment α) :=
   ∀ x ∈ xs, Literal.eval a x = true → (∀ y ∈ xs, x ≠ y → y.eval a = false)
@@ -74,25 +75,21 @@ lemma amo_propagation_of_sat (xs : List (Literal α)) (a : Assignment α) :
   intro x hx1 hx2
   have := amo_exists_no_two xs a h x hx1
   simp_all
--/
 
-lemma AMO.sat_of_all_false (xs : List (Literal α)) (a : Assignment α) :
-  (∀ x ∈ xs, x.eval a = false) → CNF.Sat a (AMO.encoder xs) := by
+lemma amo_of_zero (xs : List (Literal α)) (a : Assignment α) :
+  (∀ x ∈ xs, x.eval a = false) → CNF.Sat a (at_most_one xs) := by
   intro h
   induction xs with
   | nil =>
-    unfold AMO.encoder
-    apply CNF.tautology_of_empty
-    rfl
+    trivial
   | cons x1 xs1 ih1 =>
     have ih1 : CNF.Sat a (AMO.encoder xs1) := by simp_all
-    unfold AMO.encoder
-    rw [CNF.sat_append]
+    unfold at_most_one
+    rw [CNF.sat_concat]
     constructor
     · aesop
     · assumption
 
-/-
 lemma amo_of_one (xs : List (Literal α)) (hxs : List.Nodup xs) (a : Assignment α) :
   (∃! x ∈ xs, x.eval a = true) → CNF.Sat a (AMO.encoder xs) := by
   intro h
@@ -193,7 +190,6 @@ example (G : Graph V) (coloring : V → Fin c) :
   Graph.Coloring G coloring → ∃ a, CNF.Sat a (GraphColoring G c) := by
   unfold Graph.Coloring
   sorry
--/
 
 end DirectEncoder
 

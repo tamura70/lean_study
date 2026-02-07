@@ -1,4 +1,5 @@
-import Mathlib.Tactic
+import Batteries.Data.List.Basic
+-- import Mathlib.Tactic
 
 section
 
@@ -20,8 +21,10 @@ theorem comb2_pair (xs : List α) (x y : α) (hx : x ∈ xs) (hy : y ∈ xs) (hx
     case _ =>
       apply Or.inl
       unfold combinations2
-      simp_all
+      hint
+      sorry
     case _ =>
+      sorry
       apply Or.inr
       unfold combinations2
       simp_all
@@ -42,6 +45,7 @@ theorem comb2_some_pair (xs : List α) (hxs : List.Nodup xs) (xy : α × α) :
     trivial
   | cons x1 xs1 ih1 =>
     have : xy ∈ [x1].product xs1 ∨ xy ∈ combinations2 xs1 := by
+      hint
       aesop
     use xy.1
     use xy.2

@@ -7,8 +7,6 @@ import Mathlib.Tactic.NormNum
 
 section
 
-universe u
-
 namespace SAT
 
 /-!
@@ -86,45 +84,30 @@ abbrev CNF.equiv (f1 f2 : CNF α) : Prop :=
 Theorems of literals.
 -/
 
-@[simp]
+theorem Literal.eval_true_or_false (a : Assignment α) (x : Literal α) :
+  x.eval a = true ∨ x.eval a = false := by
+  exact Bool.eq_false_or_eq_true (eval a x)
+
 theorem Literal.eq_negate_negate (x : Literal α) :
   x.negate.negate = x := by
   grind
 
-@[simp]
 theorem Literal.eval_negate (a : Assignment α) (x : Literal α) :
-  Literal.eval a x.negate = ! Literal.eval a x := by
+  x.negate.eval a = ! x.eval a := by
   unfold Literal.eval Literal.negate
   grind only [Bool.decide_eq_false]
-
-@[simp]
-theorem Literal.eval_negate_ne_eval (a : Assignment α) (x : Literal α) :
-  x.negate.eval a ≠ x.eval a := by
-  norm_num
-
-@[simp]
-theorem Literal.eval_negate_true_iff_eval_false (a : Assignment α) (x : Literal α) :
-  x.negate.eval a = true ↔ x.eval a = false := by
-  grind only [beq_false]
-
-@[simp]
-theorem Literal.eval_negate_false_iff_eval_true (a : Assignment α) (x : Literal α) :
-  x.negate.eval a = false ↔ x.eval a = true := by
-  grind only [beq_false]
 
 /-!
 Theorems of clauses.
 -/
 
 /-- Clause.equiv is commutative. -/
-@[simp]
 theorem Clause.equiv_comm (c1 c2 : Clause α) :
   Clause.equiv c1 c2 ↔ Clause.equiv c2 c1 := by
   unfold Clause.equiv
   aesop
 
 /-- Clause.equiv is transitive. -/
-@[simp]
 theorem Clause.equiv_trans (c1 c2 c3 : Clause α) :
   Clause.equiv c1 c2 → Clause.equiv c2 c3 → Clause.equiv c1 c3 := by
   unfold Clause.equiv
@@ -132,7 +115,6 @@ theorem Clause.equiv_trans (c1 c2 c3 : Clause α) :
   simp_all only
 
 /-- The empty clause is unsatisfiable. -/
-@[simp]
 theorem Clause.unsat_of_empty (c : Clause α) (hc : c = []) :
   Clause.Unsat c := by
   rw [hc]
@@ -140,7 +122,6 @@ theorem Clause.unsat_of_empty (c : Clause α) (hc : c = []) :
   norm_num
 
 /-- Clause c1 and c2 are equivalent if they are equal as sets, that is, c1 ⊆ c2 and c2 ⊆ c1. -/
-@[simp]
 theorem Clause.equiv_of_same_sets (c1 c2 : Clause α) :
   (c1 ⊆ c2) → (c2 ⊆ c1) → Clause.equiv c1 c2 := by
   intro hs12 hs21
@@ -148,7 +129,6 @@ theorem Clause.equiv_of_same_sets (c1 c2 : Clause α) :
   grind
 
 /-- Clause c is a tautology if c contains both x and x.negate. -/
-@[simp]
 theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α) :
   (x ∈ c) → (x.negate ∈ c) → Clause.Tautology c := by
   intro hx hnx
@@ -156,7 +136,6 @@ theorem Clause.tautology_of_complements (c : Clause α) (x : Literal α) :
   intro a
   grind only [beq_false]
 
-@[simp]
 theorem Clause.sat_iff_contains_true_literal (a : Assignment α) (c : Clause α) :
   Clause.Sat a c ↔ ∃ x ∈ c, Literal.eval a x := by
   unfold Clause.Sat
@@ -167,14 +146,12 @@ Theorems of CNF formulae.
 -/
 
 /-- CNF.equiv is commutative. -/
-@[simp]
 theorem CNF.equiv_comm (f1 f2 : CNF α) :
   CNF.equiv f1 f2 ↔ CNF.equiv f2 f1 := by
   unfold CNF.equiv
   aesop
 
 /-- CNF.equiv is transitive. -/
-@[simp]
 theorem CNF.equiv_trans (f1 f2 f3 : CNF α) :
   CNF.equiv f1 f2 → CNF.equiv f2 f3 → CNF.equiv f1 f3 := by
   unfold CNF.equiv
@@ -182,7 +159,6 @@ theorem CNF.equiv_trans (f1 f2 f3 : CNF α) :
   simp_all only
 
 /-- The empty clause is unsatisfiable. -/
-@[simp]
 theorem CNF.tautology_of_empty (f : CNF α) (hf : f = []) :
   CNF.Tautology f:= by
   rw [hf]
@@ -190,14 +166,12 @@ theorem CNF.tautology_of_empty (f : CNF α) (hf : f = []) :
   norm_num
 
 /-- CNF f is Unsat if f contains the empty clause. -/
-@[simp]
 theorem CNF.unsat_of_empty_clause (f : CNF α) (hf : [] ∈ f) :
   CNF.Unsat f := by
   unfold CNF.Unsat CNF.Sat
   grind
 
 /-- CNF f is satisfiable if all clauses in f contain the same literal x. -/
-@[simp]
 theorem CNF.sat_of_same_literal (f : CNF α) (x : Literal α) :
   (∀ c, c ∈ f → x ∈ c) → (∃ a, CNF.Sat a f) := by
   intro hc
@@ -207,7 +181,6 @@ theorem CNF.sat_of_same_literal (f : CNF α) (x : Literal α) :
   grind
 
 /-- CNF f is satisfiable if all clauses in f have a positive literal. -/
-@[simp]
 theorem CNF.sat_of_positive_literal (f : CNF α) :
   (∀ c, c ∈ f → (∃ x ∈ c, x.2 = true)) → (∃ a, CNF.Sat a f) := by
   intro hc
@@ -216,17 +189,21 @@ theorem CNF.sat_of_positive_literal (f : CNF α) :
   unfold CNF.Sat
   grind
 
-@[simp]
-theorem CNF.sat_append_iff_sat_and (a : α → Bool) (f1 f2 : CNF α) :
+theorem CNF.sat_append_iff_sat_and (a : Assignment α) (f1 f2 : CNF α) :
   CNF.Sat a (f1 ++ f2) ↔ (CNF.Sat a f1 ∧ CNF.Sat a f2) := by
   unfold CNF.Sat
   exact List.forall_mem_append
 
-@[simp]
-theorem CNF.sat_flatmap_iff_sat_all (a : α → Bool) (fn : β → CNF α) (xs : List β) :
+theorem CNF.sat_flatmap_iff_sat_all (a : Assignment α) (fn : β → CNF α) (xs : List β) :
   CNF.Sat a (List.flatMap fn xs) ↔ ∀ x ∈ xs, CNF.Sat a (fn x) := by
   unfold CNF.Sat
   exact List.forall_mem_flatMap
+
+theorem CNF.sat_map_iff_sat_clause_and_sat_map
+  (a : Assignment α) (fn : β → Clause α) (x : β) (xs : List β) :
+  CNF.Sat a (List.map fn (x :: xs)) ↔ Clause.Sat a (fn x) ∧ CNF.Sat a (List.map fn xs) := by
+  unfold CNF.Sat
+  norm_num
 
 end SAT
 end

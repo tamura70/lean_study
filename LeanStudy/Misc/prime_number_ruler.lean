@@ -3,11 +3,11 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Init.Data.Nat
-import Mathlib.Data.Nat.Prime.Defs
+-- import Init.Data.Nat
+-- import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Prime.Basic
-import Mathlib.Data.Set.Basic
-import Mathlib.Algebra.Ring.Parity
+-- import Mathlib.Data.Set.Basic
+-- import Mathlib.Algebra.Ring.Parity
 
 /-!
 # 素数モノサシ
@@ -31,23 +31,20 @@ section
 /--
 素数 p について p ≥ 3 のとき Odd p
 -/
-theorem prime_ge_3_is_odd
-  (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3)
-  : Odd p := by
-  rcases Nat.Prime.eq_two_or_odd' hp with hp_eq_2 | hp_odd
+theorem prime_ge_3_is_odd (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3) :
+  p % 2 = 1 := by
+  obtain hp_eq_2 | hp_odd := Nat.Prime.eq_two_or_odd' hp
   case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
-  case _ => exact hp_odd
+  case _ => exact Nat.odd_iff.mp hp_odd
 
 /--
 素数 p について p ≥ 5 のとき p % 6 = 1 or 5
 -/
-theorem prime_ge_5_is_1_or_5_mod_6
-  (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5)
-  : (p % 6 = 1) ∨ (p % 6 = 5) := by
-  have hp_odd : (p % 2 = 1) := by
-    rcases Nat.Prime.eq_two_or_odd hp
-    case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
-    case _ => assumption
+theorem prime_ge_5_is_1_or_5_mod_6 (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5) :
+  (p % 6 = 1) ∨ (p % 6 = 5) := by
+  have hp_odd : p % 2 = 1 := by
+    apply prime_ge_3_is_odd p hp
+    exact Nat.le_of_add_left_le h5
   have h_a : (p % 6 = 1 ↔ p % 2 = 1 ∧ p % 3 = 1) := by omega
   have h_b : (p % 6 = 5 ↔ p % 2 = 1 ∧ p % 3 = 2) := by omega
   have h_c : (p % 3 ≠ 0 → p % 3 = 1 ∨ p % 3 = 2) := by omega
@@ -60,8 +57,7 @@ theorem prime_ge_5_is_1_or_5_mod_6
     rw [← Nat.Prime.dvd_iff_eq hp]
     · exact Nat.dvd_of_mod_eq_zero hp_ne_0_mod_3
     · trivial
-  rw [hp_eq_3] at h5
-  contradiction
+  simp_all only [ge_iff_le, Nat.reduceLeDiff]
 
 end
 
@@ -83,16 +79,16 @@ structure SparseRuler where
 SparseRuler で m1 から m2 の目盛り間で長さ d を測れる条件
 -/
 def measure_d (ruler : SparseRuler) (d m1 m2 : Nat) : Prop :=
-    (m1 ∈ ruler.marks ∨ m1 = 0 ∨ m1 = ruler.len)
-    ∧ (m2 ∈ ruler.marks ∨ m2 = 0 ∨ m2 = ruler.len)
-    ∧ m1 + d = m2
+  (m1 ∈ ruler.marks ∨ m1 = 0 ∨ m1 = ruler.len)
+  ∧ (m2 ∈ ruler.marks ∨ m2 = 0 ∨ m2 = ruler.len)
+  ∧ m1 + d = m2
 
 /--
 SparseRuler で長さ d を測れる条件
 -/
 def canMeasure (ruler : SparseRuler) (d : Nat) : Prop :=
-    ∃ (m1 m2 : Nat),
-    measure_d ruler d m1 m2
+  ∃ (m1 m2 : Nat),
+  measure_d ruler d m1 m2
 
 /--
 SparseRuler が完備である条件
@@ -115,20 +111,15 @@ def CompletePrimeNumberRuler (ruler : SparseRuler) : Prop :=
 /--
 SparseRuler で目盛り m1 から m2 で長さ d が測れるときに成り立つ範囲を示す
 -/
-lemma marks_bound
-  (ruler : SparseRuler)
-  (d m1 m2 : Nat) (hd : measure_d ruler d m1 m2)
-  : (0 ≤ m1 ∧ m1 + d = m2 ∧ m2 ≤ ruler.len) := by
-  rcases hd with ⟨ hm1, hm2, hm ⟩
+lemma marks_bound (ruler : SparseRuler) (d m1 m2 : Nat) (hd : measure_d ruler d m1 m2) :
+  (0 ≤ m1 ∧ m1 + d = m2 ∧ m2 ≤ ruler.len) := by
+  obtain ⟨ hm1, hm2, hm ⟩ := hd
   have hm1_in := ruler.marksInside m1
   have hm2_in := ruler.marksInside m2
-  constructorm* _ ∧ _
-  case _ =>
-    simp_all only [Nat.zero_le]
-  case _ =>
-    gcongr
-  case _ =>
-    rcases hm2 with hm21 | hm22 | hm23
+  and_intros
+  · simp_all only [Nat.zero_le]
+  · gcongr
+  · obtain hm21 | hm22 | hm23 := hm2
     case _ =>
       have := hm2_in hm21
       omega
@@ -141,8 +132,8 @@ lemma marks_bound
 長さ len ≥ 6 の完備素数モノサシは len = 素数 + 1 である
 -/
 lemma len_cpr_is_prime_plus_one
-  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
-  : (∃ p : Nat, Nat.Prime p ∧ ruler.len = p + 1) := by
+  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler) :
+  (∃ p : Nat, Nat.Prime p ∧ ruler.len = p + 1) := by
   have primes := hcpr.left
   have complete := hcpr.right
   use ruler.len - 1
@@ -178,8 +169,8 @@ lemma len_cpr_is_prime_plus_one
 長さ len ≥ 6 の完備素数モノサシは len % 6 = 0 or 2 である
 -/
 lemma len_cpr_is_0_or_2_mod_6
-  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
-  : (ruler.len % 6 = 0 ∨ ruler.len % 6 = 2) := by
+  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler) :
+  (ruler.len % 6 = 0 ∨ ruler.len % 6 = 2) := by
   have a := prime_ge_5_is_1_or_5_mod_6 (ruler.len - 1)
   have b := len_cpr_is_prime_plus_one ruler hr hcpr
   rcases b with ⟨ p, hp ⟩
@@ -191,8 +182,8 @@ lemma len_cpr_is_0_or_2_mod_6
 長さ len ≥ 6 の完備素数モノサシは Even len である
 -/
 lemma len_cpr_is_even
-  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
-  : (Even ruler.len) := by
+  (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler) :
+  (Even ruler.len) := by
   rw [Nat.even_iff]
   have := len_cpr_is_0_or_2_mod_6 ruler hr hcpr
   rcases this with h0 | h2
@@ -207,8 +198,8 @@ Prime d ∨ Prime (d + 2) ∨ Prime (len - d) である
 -/
 lemma cpr_measure_odd
   (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
-  (d : Nat) (hd : d > 0 ∧ Odd d ∧ (canMeasure ruler d))
-  : (Nat.Prime d ∨ Nat.Prime (d + 2) ∨ Nat.Prime (ruler.len - d)) := by
+  (d : Nat) (hd : d > 0 ∧ Odd d ∧ (canMeasure ruler d)) :
+  (Nat.Prime d ∨ Nat.Prime (d + 2) ∨ Nat.Prime (ruler.len - d)) := by
   rcases hd with ⟨ hd_pos, hd_odd, hd_m ⟩
   rcases hd_m with ⟨ m1, m2, hm ⟩
   have bounds := marks_bound ruler d m1 m2 hm
@@ -232,7 +223,8 @@ lemma cpr_measure_odd
           have : Odd m2 := by
             have : m1 ≥ 2 := by exact Nat.Prime.two_le m1p
             have : m2 ≥ 3 := by omega
-            apply prime_ge_3_is_odd m2 m2p this
+            have : m2 % 2 = 1 := prime_ge_3_is_odd m2 m2p this
+            exact Nat.odd_iff.mpr this
           rw [oe] at this
           rw [← Nat.not_odd_iff_even] at this
           contradiction

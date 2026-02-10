@@ -84,10 +84,6 @@ abbrev CNF.equiv (f1 f2 : CNF α) : Prop :=
 Theorems of literals.
 -/
 
-theorem Literal.eval_true_or_false (a : Assignment α) (x : Literal α) :
-  x.eval a = true ∨ x.eval a = false := by
-  exact Bool.eq_false_or_eq_true (eval a x)
-
 theorem Literal.eq_negate_negate (x : Literal α) :
   x.negate.negate = x := by
   grind

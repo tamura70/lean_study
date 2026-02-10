@@ -1,59 +1,30 @@
-import Batteries.Data.List.Basic
--- import Mathlib.Tactic
-
-section
+/-
+Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Naoyuki Tamura
+-/
+import Mathlib
+import Mathlib.Data.List.Intervals
 
 namespace Util
 
-def combinations2 : List α → List (α × α)
-  | [] => []
-  | x :: xs => (List.product [x] xs) ++ combinations2 xs
+abbrev IntRange (lb : Int) (ub : Int) : List Int :=
+  let c : Nat := Int.toNat (ub - lb + 1)
+  (List.range c).map (fun k => Int.ofNat k + lb)
 
-theorem comb2_pair (xs : List α) (x y : α) (hx : x ∈ xs) (hy : y ∈ xs) (hxy : x ≠ y) :
-  (x, y) ∈ (combinations2 xs) ∨ (y, x) ∈ (combinations2 xs) := by
-  induction xs with
-  | nil =>
-    trivial
-  | cons x1 xs1 ih1 =>
-    have : (x = x1 ∧ y ∈ xs1) ∨ (x ∈ xs1 ∧ y = x1) ∨ (x ∈ xs1 ∧ y ∈ xs1) := by
-      grind
-    obtain h1 | h2 | h3 := this
-    case _ =>
-      apply Or.inl
-      unfold combinations2
-      hint
-      sorry
-    case _ =>
-      sorry
-      apply Or.inr
-      unfold combinations2
-      simp_all
-    case _ =>
-      unfold combinations2
-      obtain h4 | h5 := ih1 h3.left h3.right
-      case _ =>
-        simp_all
-      case _ =>
-        simp_all
+#eval IntRange (-1 : Int) (5 : Int)
 
-theorem comb2_some_pair (xs : List α) (hxs : List.Nodup xs) (xy : α × α) :
-  xy ∈ (combinations2 xs) → ∃ x, ∃ y, x ∈ xs ∧ y ∈ xs ∧ x ≠ y ∧ xy = (x, y) := by
-  intro hxy
-  unfold combinations2 at hxy
-  induction xs with
-  | nil =>
-    trivial
-  | cons x1 xs1 ih1 =>
-    have : xy ∈ [x1].product xs1 ∨ xy ∈ combinations2 xs1 := by
-      hint
-      aesop
-    use xy.1
-    use xy.2
-    obtain hxy1 | hxy2 := this
-    case _ =>
-      aesop
-    case _ =>
-      grind [= combinations2]
+theorem intrange_iff_within (lb : Int) (ub : Int) (i : Int) :
+  i ∈ IntRange lb ub ↔ lb ≤ i ∧ i ≤ ub := by
+  constructor
+  · unfold IntRange
+    intro hi
+    simp_all
+    omega
+  · intros hi
+    unfold IntRange
+    norm_num
+    use (i - lb).toNat
+    simp_all
 
 end Util
-end

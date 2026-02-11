@@ -14,13 +14,13 @@ structure IVar where
   name : String
   lb : Int
   ub : Int
-deriving Repr
+deriving Repr, DecidableEq
 
 instance : ToString IVar where
   toString x := x.name
 
-abbrev IVar.dom (x : IVar) : List Int :=
-  Util.IntRange x.lb x.ub
+abbrev IVar.size (x : IVar) : Nat :=
+  (x.ub - x.lb + 1).toNat
 
 abbrev IVar.Sat (value : IVar → Int) (x : IVar) : Prop :=
   x.lb ≤ value x ∧ value x ≤ x.ub

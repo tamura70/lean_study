@@ -27,6 +27,11 @@ def EXO.encode (xs : List (Literal α)) : CNF α :=
 abbrev Card (a : Assignment α) (xs : List (Literal α)) : Nat :=
   List.countP (fun x => x.eval a) xs
 
+theorem card_eq_count_true (a : Assignment α) (xs : List (Literal α)) :
+  Card a xs = List.count true (xs.map (fun x => x.eval a)) := by
+  unfold Card List.count
+  aesop
+
 theorem ALO.sat_iff_card_ge_one (a : Assignment α) (xs : List (Literal α)) :
   CNF.Sat a (ALO.encode xs) ↔ Card a xs ≥ 1 := by
   unfold ALO.encode

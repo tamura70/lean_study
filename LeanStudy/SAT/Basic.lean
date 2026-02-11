@@ -14,14 +14,14 @@ Definitions of assignments.
 -/
 
 /-- An assignment is a map α → Bool. -/
-abbrev Assignment (α : Type u) := α → Bool
+abbrev Assignment (α : Type _) := α → Bool
 
 /-!
 Definitions of literals.
 -/
 
 /-- A literal is a pair of α and Bool. -/
-abbrev Literal (α : Type u) := α × Bool
+abbrev Literal (α : Type _) := α × Bool
 
 /-- Positive literal has a true polarity. -/
 abbrev Literal.isPositive (x : Literal α) := x.2

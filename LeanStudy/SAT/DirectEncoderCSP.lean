@@ -18,58 +18,112 @@ def iY : IVar := { name := "y", lb := 1, ub := 3 }
 
 abbrev α := IVar × Int
 
-abbrev eq (x : IVar) (i : Int) : Literal α :=
+abbrev x_eq (x : IVar) (i : Int) : Literal α :=
   ((x, i), true)
 
-abbrev ne (x : IVar) (i : Int) : Literal α :=
+abbrev x_ne (x : IVar) (i : Int) : Literal α :=
   ((x, i), false)
 
 abbrev literals (x : IVar) : List (Literal α) :=
-  x.dom.map fun i => eq x i
+  (Util.IntRange x.lb x.ub).map (x_eq x)
 
 abbrev encode_x (x : IVar) : CNF α :=
   DirectEncoder.EXO.encode (literals x)
 
-#eval toString (eq iX 1)
+#eval toString (x_eq iX 1)
 #eval toString (encode_x iX)
 
 abbrev encode_c (c : Constraint) : CNF α :=
   match c with
   | Constraint.ne x y =>
     let ii := Util.IntRange (max x.lb y.lb) (min x.ub y.ub)
-    ii.map (fun i => [ne x i, ne y i])
+    ii.map (fun i => [x_ne x i, x_ne y i])
 
 abbrev encode (csp : CSP) : CNF α :=
-  csp.variables.flatMap (fun x => encode_x x) ++
+  csp.ivariables.flatMap (fun x => encode_x x) ++
   csp.constraints.flatMap (fun c => encode_c c)
 
 abbrev value_to_assignment (value : IVar → Int) : Assignment α :=
   fun (x, i) => value x = i
 
-lemma value_eq_i_iff_eval_true (value : IVar → Int) (x : IVar) (i : Int) :
-  value x = i ↔ (eq x i).eval (value_to_assignment value) = true := by
+lemma x_eq_true_iff_value_eq_i (value : IVar → Int) (x : IVar) (i : Int) :
+  (x_eq x i).eval (value_to_assignment value) = true ↔ value x = i := by
   norm_num
 
-example (value : IVar → Int) (x : IVar) :
-  x.lb ≤ value x → value x ≤ x.ub →
-  ∃ l ∈ literals x, l.eval (value_to_assignment value) = true := by
-  intros
-  use eq x (value x)
-  constructor
-  · unfold literals
-    sorry
-  · sorry
+lemma x_eq_true (value : IVar → Int) (x : IVar) :
+  (x_eq x (value x)).eval (value_to_assignment value) = true := by
+  norm_num
 
-lemma sat_cnf_of_sat_csp (value : IVar → Int) (x : IVar) :
+lemma x_ne_fale_iff_value_eq_i (value : IVar → Int) (x : IVar) (i : Int) :
+  (x_ne x i).eval (value_to_assignment value) = false ↔ value x = i := by
+  norm_num
+
+lemma x_ne_false (value : IVar → Int) (x : IVar) :
+  (x_ne x (value x)).eval (value_to_assignment value) = false := by
+  norm_num
+
+lemma x_eq_injective (x : IVar) :
+  Function.Injective (x_eq x) := by
+  unfold Function.Injective
+  norm_num
+
+lemma count_literals_eq_one (x : IVar) (i : Int) (h1 : x.lb ≤ i) (h2 : i ≤ x.ub) :
+  List.count (x_eq x i) (literals x) = 1 := by
+  unfold literals
+  let r := Util.IntRange x.lb x.ub
+  rw [Util.count_injective i r (x_eq x) (x_eq_injective x)]
+  exact Util.count_intrange_eq_one x.lb x.ub i h1 h2
+
+lemma sat_encode_x_iff_countP_eq_one (x : IVar) :
+  ∀ a, CNF.Sat a (encode_x x) ↔ List.countP (fun x1 => x1.eval a) (literals x) = 1 := by
+  intro a
+  unfold encode_x
+  constructor
+  · rw [DirectEncoder.EXO.sat_iff_card_eq_one]
+    unfold Card
+    gcongr
+  · rw [DirectEncoder.EXO.sat_iff_card_eq_one]
+    unfold Card
+    gcongr
+
+lemma sat_cnf_of_sat_ivar (value : IVar → Int) (x : IVar) :
   IVar.Sat value x → CNF.Sat (value_to_assignment value) (encode_x x) := by
-  set a := value_to_assignment value
   unfold IVar.Sat
   intro h
-  unfold encode_x
-  rw [DirectEncoder.EXO.sat_iff_card_eq_one]
-  unfold Card literals
-  simp_all only [List.map_map, Int.ofNat_eq_natCast, List.countP_map]
-  sorry
+  obtain ⟨ h1, h2 ⟩ := h
+  rw [sat_encode_x_iff_countP_eq_one]
+  let p := fun x => Literal.eval (value_to_assignment value) x
+  let q := fun x1 => x1 == x_eq x (value x)
+  have : ∀ x1 ∈ (literals x), (p x1 = true) ↔ (q x1 = true) := by
+    grind
+  rw [List.countP_congr this]
+  exact count_literals_eq_one x (value x) h1 h2
+
+lemma sat_ivar_of_sat_cnf (value : IVar → Int) (x : IVar) :
+  CNF.Sat (value_to_assignment value) (encode_x x) → IVar.Sat value x := by
+  unfold IVar.Sat
+  rw [sat_encode_x_iff_countP_eq_one]
+  let p := fun x => Literal.eval (value_to_assignment value) x
+  let q := fun x1 => x1 == x_eq x (value x)
+  have : ∀ x1 ∈ (literals x), (p x1 = true) ↔ (q x1 = true) := by grind
+  rw [List.countP_congr this]
+  intro h
+  unfold literals at h
+  set r := Util.IntRange x.lb x.ub
+  by_contra
+  have : value x ∉ r := by grind
+  have : value x ∈ r := by
+    rw [Util.countP_map r (x_eq x) q] at h
+    have : List.count (value x) r = 1:= by
+      grind only [List.countP_eq_zero, List.count_eq_zero]
+    grind only [List.count_eq_zero]
+  contradiction
+
+theorem sat_ivar_iff_sat_cnf (value : IVar → Int) (x : IVar) :
+  CNF.Sat (value_to_assignment value) (encode_x x) ↔ IVar.Sat value x := by
+  constructor
+  · exact fun a ↦ sat_ivar_of_sat_cnf value x a
+  · exact fun a ↦ sat_cnf_of_sat_ivar value x a
 
 
 end DirectEncoder

@@ -3,11 +3,8 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
--- import Init.Data.Nat
--- import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Prime.Basic
--- import Mathlib.Data.Set.Basic
--- import Mathlib.Algebra.Ring.Parity
+import Mathlib.Tactic.ModCases
 
 /-!
 # 素数モノサシ
@@ -38,26 +35,35 @@ theorem prime_ge_3_is_odd (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3) :
   case _ => exact Nat.odd_iff.mp hp_odd
 
 /--
+自然数 n について 2 でも 3 でも割り切れなければ n % 6 = 1 or 5
+-/
+lemma mod_eq_1_or_5 (n : Nat) (h2 : n % 2 ≠ 0) (h3 : n % 3 ≠ 0) :
+  (n % 6 = 1) ∨ (n % 6 = 5) := by
+  mod_cases n % 6
+  · have : n ≡ 0 [MOD 2] := by grind only [Nat.modEq_iff_dvd]
+    trivial
+  · exact Or.symm (Or.inr H)
+  · have : n ≡ 0 [MOD 2] := by grind only [Nat.modEq_iff_dvd]
+    trivial
+  · have : n ≡ 0 [MOD 3] := by grind only [Nat.mod_eq_of_modEq]
+    trivial
+  · have : n ≡ 0 [MOD 2] := by grind only [Nat.modEq_iff_dvd]
+    trivial
+  · exact Or.inr H
+
+/--
 素数 p について p ≥ 5 のとき p % 6 = 1 or 5
 -/
 theorem prime_ge_5_is_1_or_5_mod_6 (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5) :
   (p % 6 = 1) ∨ (p % 6 = 5) := by
-  have hp_odd : p % 2 = 1 := by
-    apply prime_ge_3_is_odd p hp
-    exact Nat.le_of_add_left_le h5
-  have h_a : (p % 6 = 1 ↔ p % 2 = 1 ∧ p % 3 = 1) := by omega
-  have h_b : (p % 6 = 5 ↔ p % 2 = 1 ∧ p % 3 = 2) := by omega
-  have h_c : (p % 3 ≠ 0 → p % 3 = 1 ∨ p % 3 = 2) := by omega
-  rw [h_a, h_b, hp_odd]
-  simp only [true_and]
-  apply h_c
-  show p % 3 ≠ 0
-  by_contra hp_ne_0_mod_3
-  have hp_eq_3 : p = 3 := by
-    rw [← Nat.Prime.dvd_iff_eq hp]
-    · exact Nat.dvd_of_mod_eq_zero hp_ne_0_mod_3
-    · trivial
-  simp_all only [ge_iff_le, Nat.reduceLeDiff]
+  have hp2 : p % 2 ≠ 0 := by
+    grind only [prime_ge_3_is_odd]
+  have hp3 : p % 3 ≠ 0 := by
+    by_contra h
+    have h : 3 ∣ p := by exact Nat.dvd_of_mod_eq_zero h
+    have := Nat.not_prime_of_dvd_of_lt h
+    grind
+  apply mod_eq_1_or_5 p hp2 hp3
 
 end
 
@@ -69,7 +75,6 @@ section
 /--
 SparseRuler の定義。目盛りの位置は任意。
 -/
-@[ext]
 structure SparseRuler where
   len : Nat
   marks : Set Nat

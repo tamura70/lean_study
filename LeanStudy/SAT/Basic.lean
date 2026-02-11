@@ -137,6 +137,11 @@ theorem Clause.sat_iff_contains_true_literal (a : Assignment α) (c : Clause α)
   unfold Clause.Sat
   norm_num
 
+theorem Clause.sat_iff_countP (a : Assignment α) (c : Clause α) :
+  Clause.Sat a c ↔ List.countP (fun x => x.eval a = true) c ≥ 1 := by
+  unfold Clause.Sat
+  norm_num
+
 /-!
 Theorems of CNF formulae.
 -/

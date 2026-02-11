@@ -7,6 +7,7 @@ import LeanStudy.SAT.Basic
 import LeanStudy.SAT.DirectEncoder
 import LeanStudy.CSP.Basic
 import LeanStudy.Util
+import Mathlib.Tactic.NormNum
 
 namespace DirectEncoder
 
@@ -125,5 +126,20 @@ theorem sat_ivar_iff_sat_cnf (value : IVar → Int) (x : IVar) :
   · exact fun a ↦ sat_ivar_of_sat_cnf value x a
   · exact fun a ↦ sat_cnf_of_sat_ivar value x a
 
+lemma sat_cnf_of_sat_constraint (value : IVar → Int) (c : Constraint) :
+  Constraint.Sat value c → CNF.Sat (value_to_assignment value) (encode_c c) := by
+  intro h
+  sorry
+
+lemma sat_constraint_of_sat_cnf (value : IVar → Int) (c : Constraint) :
+  CNF.Sat (value_to_assignment value) (encode_c c) → Constraint.Sat value c := by
+  intro h
+  sorry
+
+theorem sat_constraint_iff_sat_cnf (value : IVar → Int) (c : Constraint) :
+  CNF.Sat (value_to_assignment value) (encode_c c) ↔ Constraint.Sat value c := by
+  constructor
+  · exact fun a ↦ sat_constraint_of_sat_cnf value c a
+  · exact fun a ↦ sat_cnf_of_sat_constraint value c a
 
 end DirectEncoder

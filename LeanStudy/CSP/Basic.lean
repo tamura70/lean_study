@@ -12,24 +12,24 @@ namespace CSP
 /-! IVar -/
 structure IVar where
   name : String
-  lb : Int
-  ub : Int
+  lb : Nat
+  ub : Nat
 deriving Repr, DecidableEq
 
 instance : ToString IVar where
   toString x := x.name
 
 abbrev IVar.size (x : IVar) : Nat :=
-  (x.ub - x.lb + 1).toNat
+  x.ub - x.lb + 1
 
-abbrev IVar.Sat (value : IVar → Int) (x : IVar) : Prop :=
+abbrev IVar.Sat (value : IVar → Nat) (x : IVar) : Prop :=
   x.lb ≤ value x ∧ value x ≤ x.ub
 
 /-! Constraint -/
 inductive Constraint where
 | ne (x : IVar) (y : IVar) : Constraint
 
-abbrev Constraint.Sat (value : IVar → Int) (c : Constraint) : Prop :=
+abbrev Constraint.Sat (value : IVar → Nat) (c : Constraint) : Prop :=
   match c with
   | Constraint.ne x y => value x ≠ value y
 
@@ -42,7 +42,7 @@ structure CSP where
   ivariables : List IVar
   constraints : List Constraint
 
-abbrev CSP.Sat (value : IVar → Int) (csp : CSP) : Prop :=
+abbrev CSP.Sat (value : IVar → Nat) (csp : CSP) : Prop :=
   (∀ x ∈ csp.ivariables, IVar.Sat value x) ∧
   (∀ c ∈ csp.constraints, Constraint.Sat value c)
 

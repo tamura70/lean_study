@@ -8,46 +8,15 @@ import Mathlib.Tactic.NormNum
 
 namespace Util
 
-abbrev IntRange (lb ub : Int) : List Int :=
-  (List.range (ub - lb + 1).toNat).attach.map (fun k => ↑k + lb)
+abbrev Range (lb ub : Nat) : List Nat :=
+  (List.range (ub - lb + 1)).map (fun i => i + lb)
 
-#eval IntRange (-1 : Int) (5 : Int)
+#eval Range (2 : Nat) (5 : Nat)
 
-lemma intrange_bound' (lb ub : Int) :
-  ∀ i ∈ (IntRange lb ub), lb ≤ i ∧ i ≤ ub := by
-  intro i hi
-  grind
-
-theorem intrange_bound (lb ub : Int) :
-  ∀ i : Int, i ∈ (IntRange lb ub) ↔ lb ≤ i ∧ i ≤ ub := by
+theorem range_bound (lb ub : Nat) :
+  ∀ i, i ∈ (Range lb ub) ↔ lb ≤ i ∧ i ≤ ub := by
   intro i
-  constructor
-  · intro h
-    exact intrange_bound' lb ub i h
-  · intro ⟨ h1, h2 ⟩
-    unfold IntRange
-    simp only [List.mem_range, Int.lt_toNat, List.map_subtype, List.unattach_attach, List.mem_map]
-    use (i - lb).toNat
-    omega
-
-theorem count_intrange_eq_one (lb ub i : Int) (h1 : lb ≤ i) (h2 : i ≤ ub) :
-  List.count i (IntRange lb ub) = 1 := by
-  unfold IntRange
-  set di := (i - lb).toNat
-  set r := List.range (ub - lb + 1).toNat
-  have : List.count di r = 1 := by grind
-  unfold List.count at *
-  simp only [List.map_subtype, List.unattach_attach, List.countP_map]
-  let p : Nat → Bool := (fun x => x == i) ∘ (fun x => ↑x + lb)
-  let q : Nat → Bool := (fun x => x == di)
-  have : ∀ x ∈ r, (p x = true) ↔ (q x = true) := by grind
-  rw [List.countP_congr this]
-  gcongr
-
-theorem count_intrange_eq_zero (lb ub i : Int) (h : i < lb ∨ ub < i) :
-  List.count i (IntRange lb ub) = 0 := by
-  have : i ∉ (IntRange lb ub) := by grind
-  exact List.count_eq_zero.mpr this
+  sorry
 
 theorem count_injective [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq β]
   (x : α) (xs : List α) (f : α → β) (hf : Function.Injective f) :

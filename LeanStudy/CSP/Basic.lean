@@ -19,19 +19,21 @@ deriving Repr, DecidableEq
 instance : ToString IVar where
   toString x := x.name
 
+abbrev Valuation := IVar → Int
+
 abbrev IVar.size (x : IVar) : Int :=
   x.ub - x.lb + 1
 
-abbrev IVar.Sat (value : IVar → Int) (x : IVar) : Prop :=
-  x.lb ≤ value x ∧ value x ≤ x.ub
+abbrev IVar.Sat (valuation : Valuation) (x : IVar) : Prop :=
+  x.lb ≤ valuation x ∧ valuation x ≤ x.ub
 
 /-! Constraint -/
 inductive Constraint where
 | ne (x : IVar) (y : IVar) : Constraint
 
-abbrev Constraint.Sat (value : IVar → Int) (c : Constraint) : Prop :=
+abbrev Constraint.Sat (valuation : Valuation) (c : Constraint) : Prop :=
   match c with
-  | Constraint.ne x y => value x ≠ value y
+  | Constraint.ne x y => valuation x ≠ valuation y
 
 end CSP
 
@@ -42,8 +44,8 @@ structure CSP where
   ivariables : List IVar
   constraints : List Constraint
 
-abbrev CSP.Sat (value : IVar → Int) (csp : CSP) : Prop :=
-  (∀ x ∈ csp.ivariables, IVar.Sat value x) ∧
-  (∀ c ∈ csp.constraints, Constraint.Sat value c)
+abbrev CSP.Sat (valuation : Valuation) (csp : CSP) : Prop :=
+  (∀ x ∈ csp.ivariables, IVar.Sat valuation x) ∧
+  (∀ c ∈ csp.constraints, Constraint.Sat valuation c)
 
 end

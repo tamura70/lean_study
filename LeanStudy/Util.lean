@@ -106,11 +106,11 @@ lemma count_intrange'_eq_one (s : Nat) (lb : Int) (i : Int) (h : lb ≤ i ∧ i 
   rw [count_range_eq_one]
   omega
 
-lemma count_intrange_eq_count_intrange' (lb ub : Int) (h : lb ≤ ub) (i : Int) :
+lemma count_intrange_eq_count_intrange' (lb ub : Int) (i : Int) (h : lb ≤ ub) :
   List.count i (IntRange lb ub) = List.count i (IntRange' (ub - lb).toNat lb) := by
   grind
 
-lemma count_intrange_eq_zero (lb ub : Int) (i : Int) (h : i < lb ∨ ub < i) :
+theorem count_intrange_eq_zero (lb ub : Int) (i : Int) (h : i < lb ∨ ub < i) :
   List.count i (IntRange lb ub) = 0 := by
   have : ub < lb ∨ lb ≤ ub := by exact Int.lt_or_le ub lb
   obtain h1 | h2 := this
@@ -118,14 +118,19 @@ lemma count_intrange_eq_zero (lb ub : Int) (i : Int) (h : i < lb ∨ ub < i) :
     unfold IntRange
     simp_all only [↓reduceIte, List.count_nil]
   case _ =>
-    rw [count_intrange_eq_count_intrange' lb ub h2 i]
+    rw [count_intrange_eq_count_intrange' lb ub i h2]
     set s := (ub - lb).toNat
     have : ub = lb + s := by omega
     rw [this] at h
     exact count_intrange'_eq_zero s lb i h
 
-lemma count_intrange_eq_one (lb ub : Int) (i : Int) (h : lb ≤ i ∨ i ≤ ub) :
+theorem count_intrange_eq_one (lb ub : Int) (i : Int) (h : lb ≤ i ∧ i ≤ ub) :
   List.count i (IntRange lb ub) = 1 := by
-  sorry
+  have : lb ≤ ub := by omega
+  rw [count_intrange_eq_count_intrange' lb ub i this]
+  set s := (ub - lb).toNat
+  have : ub = lb + s := by omega
+  rw [this] at h
+  exact count_intrange'_eq_one s lb i h
 
 end Util

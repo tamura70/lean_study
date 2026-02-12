@@ -131,6 +131,7 @@ lemma neg_seq {x : Real} (fs : List (ℝ → ℝ))
   simp only [Function.comp_apply]
   rw [neg_x]
 
+/-
 noncomputable def prepend_add_n (n : Int) (fs : List (ℝ → ℝ)) : List (ℝ → ℝ) :=
   match n with
   | 0 => fs
@@ -145,7 +146,7 @@ theorem add_n_seq (hx : x ≥ 0) (n : Int) (fs : List (ℝ → ℝ))
     unfold prepend_add_n
     rw [add_one_seq hx]
     sorry
-
+-/
 
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html

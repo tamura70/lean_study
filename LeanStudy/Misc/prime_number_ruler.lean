@@ -28,7 +28,7 @@ section
 /--
 素数 p について p ≥ 3 のとき Odd p
 -/
-theorem prime_ge_3_is_odd (p : Int) (hp : Nat.Prime p) (h3 : p ≥ 3) :
+theorem prime_ge_3_is_odd (p : Nat) (hp : Nat.Prime p) (h3 : p ≥ 3) :
   p % 2 = 1 := by
   obtain hp_eq_2 | hp_odd := Nat.Prime.eq_two_or_odd' hp
   case _ => simp_all only [ge_iff_le, Nat.reduceLeDiff]
@@ -37,7 +37,7 @@ theorem prime_ge_3_is_odd (p : Int) (hp : Nat.Prime p) (h3 : p ≥ 3) :
 /--
 自然数 n について 2 でも 3 でも割り切れなければ n % 6 = 1 or 5
 -/
-lemma mod_eq_1_or_5 (n : Int) (h2 : n % 2 ≠ 0) (h3 : n % 3 ≠ 0) :
+lemma mod_eq_1_or_5 (n : Nat) (h2 : n % 2 ≠ 0) (h3 : n % 3 ≠ 0) :
   (n % 6 = 1) ∨ (n % 6 = 5) := by
   mod_cases n % 6
   · have : n ≡ 0 [MOD 2] := by grind only [Nat.modEq_iff_dvd]
@@ -54,7 +54,7 @@ lemma mod_eq_1_or_5 (n : Int) (h2 : n % 2 ≠ 0) (h3 : n % 3 ≠ 0) :
 /--
 素数 p について p ≥ 5 のとき p % 6 = 1 or 5
 -/
-theorem prime_ge_5_is_1_or_5_mod_6 (p : Int) (hp : Nat.Prime p) (h5 : p ≥ 5) :
+theorem prime_ge_5_is_1_or_5_mod_6 (p : Nat) (hp : Nat.Prime p) (h5 : p ≥ 5) :
   (p % 6 = 1) ∨ (p % 6 = 5) := by
   have hp2 : p % 2 ≠ 0 := by
     grind only [prime_ge_3_is_odd]
@@ -76,14 +76,14 @@ section
 SparseRuler の定義。目盛りの位置は任意。
 -/
 structure SparseRuler where
-  len : Int
-  marks : Set Int
-  marksInside : ∀ m : Int, m ∈ marks → (0 < m ∧ m < len)
+  len : Nat
+  marks : Set Nat
+  marksInside : ∀ m : Nat, m ∈ marks → (0 < m ∧ m < len)
 
 /--
 SparseRuler で m1 から m2 の目盛り間で長さ d を測れる条件
 -/
-def measure_d (ruler : SparseRuler) (d m1 m2 : Int) : Prop :=
+def measure_d (ruler : SparseRuler) (d m1 m2 : Nat) : Prop :=
   (m1 ∈ ruler.marks ∨ m1 = 0 ∨ m1 = ruler.len)
   ∧ (m2 ∈ ruler.marks ∨ m2 = 0 ∨ m2 = ruler.len)
   ∧ m1 + d = m2
@@ -91,15 +91,15 @@ def measure_d (ruler : SparseRuler) (d m1 m2 : Int) : Prop :=
 /--
 SparseRuler で長さ d を測れる条件
 -/
-def canMeasure (ruler : SparseRuler) (d : Int) : Prop :=
-  ∃ (m1 m2 : Int),
+def canMeasure (ruler : SparseRuler) (d : Nat) : Prop :=
+  ∃ (m1 m2 : Nat),
   measure_d ruler d m1 m2
 
 /--
 SparseRuler が完備である条件
 -/
 def CompleteRuler (ruler : SparseRuler) : Prop :=
-  ∀ d : Int, (0 < d ∧ d < ruler.len) → (canMeasure ruler d)
+  ∀ d : Nat, (0 < d ∧ d < ruler.len) → (canMeasure ruler d)
 
 /--
 SparseRuler が素数モノサシである条件
@@ -116,7 +116,7 @@ def CompletePrimeNumberRuler (ruler : SparseRuler) : Prop :=
 /--
 SparseRuler で目盛り m1 から m2 で長さ d が測れるときに成り立つ範囲を示す
 -/
-lemma marks_bound (ruler : SparseRuler) (d m1 m2 : Int) (hd : measure_d ruler d m1 m2) :
+lemma marks_bound (ruler : SparseRuler) (d m1 m2 : Nat) (hd : measure_d ruler d m1 m2) :
   (0 ≤ m1 ∧ m1 + d = m2 ∧ m2 ≤ ruler.len) := by
   obtain ⟨ hm1, hm2, hm ⟩ := hd
   have hm1_in := ruler.marksInside m1
@@ -138,7 +138,7 @@ lemma marks_bound (ruler : SparseRuler) (d m1 m2 : Int) (hd : measure_d ruler d 
 -/
 lemma len_cpr_is_prime_plus_one
   (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler) :
-  (∃ p : Int, Nat.Prime p ∧ ruler.len = p + 1) := by
+  (∃ p : Nat, Nat.Prime p ∧ ruler.len = p + 1) := by
   have primes := hcpr.left
   have complete := hcpr.right
   use ruler.len - 1
@@ -203,7 +203,7 @@ Prime d ∨ Prime (d + 2) ∨ Prime (len - d) である
 -/
 lemma cpr_measure_odd
   (ruler : SparseRuler) (hr : ruler.len ≥ 6) (hcpr : CompletePrimeNumberRuler ruler)
-  (d : Int) (hd : d > 0 ∧ Odd d ∧ (canMeasure ruler d)) :
+  (d : Nat) (hd : d > 0 ∧ Odd d ∧ (canMeasure ruler d)) :
   (Nat.Prime d ∨ Nat.Prime (d + 2) ∨ Nat.Prime (ruler.len - d)) := by
   rcases hd with ⟨ hd_pos, hd_odd, hd_m ⟩
   rcases hd_m with ⟨ m1, m2, hm ⟩

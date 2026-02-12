@@ -37,8 +37,7 @@ abbrev encode_x (x : IVar) : CNF α :=
 abbrev encode_c (c : Constraint) : CNF α :=
   match c with
   | Constraint.ne x y =>
-    let ii := Util.IntRange (max x.lb y.lb) (min x.ub y.ub)
-    ii.map (fun i => [x_ne x i, x_ne y i])
+    (Util.IntRange (max x.lb y.lb) (min x.ub y.ub)).map (fun i => [x_ne x i, x_ne y i])
 
 abbrev encode (csp : CSP) : CNF α :=
   csp.ivariables.flatMap (fun x => encode_x x) ++
@@ -47,33 +46,17 @@ abbrev encode (csp : CSP) : CNF α :=
 abbrev val_to_a (val : Valuation) : Assignment α :=
   fun (x, i) => val x = i
 
-lemma x_eq_true_iff_val_eq (val : Valuation) (x : IVar) (i : Int) :
-  (x_eq x i).eval (val_to_a val) = true ↔ val x = i := by
-  norm_num
-
-lemma x_eq_true (val : Valuation) (x : IVar) :
-  (x_eq x (val x)).eval (val_to_a val) = true := by
-  norm_num
-
-lemma x_ne_fale_iff_val_eq_i (val : Valuation) (x : IVar) (i : Int) :
-  (x_ne x i).eval (val_to_a val) = false ↔ val x = i := by
-  norm_num
-
-lemma x_ne_false (val : Valuation) (x : IVar) :
-  (x_ne x (val x)).eval (val_to_a val) = false := by
-  norm_num
-
 lemma x_eq_injective (x : IVar) :
   Function.Injective (x_eq x) := by
   unfold Function.Injective
   norm_num
 
-lemma count_literals_eq_one (x : IVar) (i : Int) (h : x.lb ≤ i ∧ i ≤ x.ub) :
-  List.count (x_eq x i) (literals x) = 1 := by
+lemma count_literals_eq_one_iff_bound (x : IVar) (i : Int) :
+  List.count (x_eq x i) (literals x) = 1 ↔ x.lb ≤ i ∧ i ≤ x.ub := by
   unfold literals
   let r := Util.IntRange x.lb x.ub
   rw [Util.count_injective i r (x_eq x) (x_eq_injective x)]
-  exact Util.count_intrange_eq_one x.lb x.ub i h
+  exact Util.count_intrange_eq_one_iff_bound x.lb x.ub i
 
 lemma sat_encode_x_iff_countP_eq_one (x : IVar) :
   ∀ a, CNF.Sat a (encode_x x) ↔ List.countP (fun lit => lit.eval a) (literals x) = 1 := by
@@ -87,55 +70,63 @@ lemma sat_encode_x_iff_countP_eq_one (x : IVar) :
     unfold Card
     gcongr
 
-lemma sat_cnf_of_sat_ivar (val : Valuation) (x : IVar) :
-  IVar.Sat val x → CNF.Sat (val_to_a val) (encode_x x) := by
+theorem sat_ivar_iff_sat_cnf (val : Valuation) (x : IVar) :
+  CNF.Sat (val_to_a val) (encode_x x) ↔ IVar.Sat val x := by
   unfold IVar.Sat
-  intro h
   rw [sat_encode_x_iff_countP_eq_one]
   let p := fun x => Literal.eval (val_to_a val) x
   let q := fun x1 => x1 == x_eq x (val x)
   have : ∀ x1 ∈ (literals x), (p x1 = true) ↔ (q x1 = true) := by
     grind
   rw [List.countP_congr this]
-  exact count_literals_eq_one x (val x) h
+  have := count_literals_eq_one_iff_bound x (val x)
+  unfold List.count at this
+  rw [this]
 
-lemma sat_ivar_of_sat_cnf (val : Valuation) (x : IVar) :
-  CNF.Sat (val_to_a val) (encode_x x) → IVar.Sat val x := by
-  unfold IVar.Sat
-  rw [sat_encode_x_iff_countP_eq_one]
-  let p := fun x => Literal.eval (val_to_a val) x
-  let q := fun x1 => x1 == x_eq x (val x)
-  have : ∀ x1 ∈ (literals x), (p x1 = true) ↔ (q x1 = true) := by grind
-  rw [List.countP_congr this]
-  intro h
-  unfold literals at h
-  set r := Util.IntRange x.lb x.ub
-  sorry -- TODO
-  /-
-  by_contra
-  have : val x ∉ r := by
-    simp only [not_and_or] at this
-    obtain hx1 | hx2 := this
-    case _ =>
-      grind
-    case _ =>
-      sorry
-  have : val x ∈ r := by
-    rw [Util.countP_map r (x_eq x) q] at h
-    have : List.count (val x) r = 1:= by
-      grind only [List.countP_eq_zero, List.count_eq_zero]
-    grind only [List.count_eq_zero]
-  contradiction
-  -/
+lemma val_ne_iff_all_ne (val : Valuation) (x y : IVar) (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
+  ¬ (val x = val y) ↔ ∀ i, max x.lb y.lb ≤ i → i ≤ min x.ub y.ub → val x ≠ i ∨ val y ≠ i := by
+  grind
 
-theorem sat_ivar_iff_sat_cnf (val : Valuation) (x : IVar) :
-  CNF.Sat (val_to_a val) (encode_x x) ↔ IVar.Sat val x := by
+lemma sat_clause_x_ne_iff_ne_or_ne (val : Valuation) (x y : IVar) (i : Int) :
+  Clause.Sat (val_to_a val) [x_ne x i, x_ne y i] ↔ val x ≠ i ∨ val y ≠ i := by
+  unfold Clause.Sat val_to_a Literal.eval
+  norm_num
+
+lemma sat_cnf_x_ne_iff_all_ne_or_ne (val : Valuation) (x y : IVar) :
+  CNF.Sat (val_to_a val) (encode_c (Constraint.ne x y)) ↔
+  ∀ i, max x.lb y.lb ≤ i → i ≤ min x.ub y.ub → val x ≠ i ∨ val y ≠ i := by
+  unfold CNF.Sat
   constructor
-  · exact fun a ↦ sat_ivar_of_sat_cnf val x a
-  · exact fun a ↦ sat_cnf_of_sat_ivar val x a
+  · intro h i hi1 hi2
+    rw [← sat_clause_x_ne_iff_ne_or_ne val x y i]
+    unfold encode_c at h
+    have := h [x_ne x i, x_ne y i]
+    sorry
+  · intro h
 
-lemma sat_ne_iff_sat_cnf (val : Valuation) (c : Constraint) (hc : c = Constraint.ne x y) :
+    sorry
+
+  rw [sat_clause_x_ne_iff_ne_or_ne val x y]
+
+   encode_c val_to_a
+  unfold Clause.Sat Literal.eval
+
+  simp only [List.mem_map, List.mem_ite_nil_left, lt_sup_iff, inf_lt_iff, not_or, not_lt,
+    List.map_map, List.mem_range, Function.comp_apply, ↓existsAndEq, and_true, decide_eq_true_eq,
+    Prod.exists, Bool.exists_bool, decide_eq_false_iff_not, forall_exists_index, and_imp,
+    sup_le_iff, le_inf_iff, ne_eq]
+  try?
+  norm_num
+  sorry
+
+lemma sat_ne_iff_sat_cnf (val : Valuation) (c : Constraint) (hc : c = Constraint.ne x y)
+  (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
   Constraint.Sat val c ↔ CNF.Sat (val_to_a val) (encode_c c) := by
+  unfold Constraint.Sat
+  simp only [ne_eq]
+  rw [val_ne_iff_all_ne]
+  unfold encode_c
+  simp only [sup_le_iff, le_inf_iff, ne_eq, and_imp]
   sorry -- TODO
 
 theorem sat_constraint_iff_sat_cnf (val : Valuation) (c : Constraint) :

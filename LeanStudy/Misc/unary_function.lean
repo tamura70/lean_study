@@ -131,12 +131,12 @@ lemma neg_seq {x : Real} (fs : List (ℝ → ℝ))
   simp only [Function.comp_apply]
   rw [neg_x]
 
-noncomputable def prepend_add_n (n : Nat) (fs : List (ℝ → ℝ)) : List (ℝ → ℝ) :=
+noncomputable def prepend_add_n (n : Int) (fs : List (ℝ → ℝ)) : List (ℝ → ℝ) :=
   match n with
   | 0 => fs
   | n' + 1 => sqrt::atan::cos::inv::squ::(prepend_add_n n' fs)
 
-theorem add_n_seq (hx : x ≥ 0) (n : Nat) (fs : List (ℝ → ℝ))
+theorem add_n_seq (hx : x ≥ 0) (n : Int) (fs : List (ℝ → ℝ))
   : seq (prepend_add_n n fs) x = seq fs (x + n) := by
   induction n with
   | zero =>

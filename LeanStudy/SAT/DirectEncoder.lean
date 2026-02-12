@@ -24,7 +24,7 @@ def AMO.encode : List (Literal α) → CNF α
 def EXO.encode (xs : List (Literal α)) : CNF α :=
   ALO.encode xs ++ AMO.encode xs
 
-abbrev Card (a : Assignment α) (xs : List (Literal α)) : Nat :=
+abbrev Card (a : Assignment α) (xs : List (Literal α)) : Int :=
   List.countP (fun x => x.eval a) xs
 
 theorem card_eq_count_true (a : Assignment α) (xs : List (Literal α)) :

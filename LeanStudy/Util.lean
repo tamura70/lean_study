@@ -161,15 +161,35 @@ theorem in_intrange_iff_within_bound (lb ub : Int) (i : Int) :
   have := count_intrange_le_one lb ub i
   omega
 
-theorem map_intrange_iff_map_bound (lb ub : Int) (f : Int → β) (p : β → Prop) :
-  (∀ j ∈ (IntRange lb ub).map f, p j) ↔ (∀ i, lb ≤ i → i ≤ ub → p (f i)) := by
+theorem all_intrange_iff_all_bound (lb ub : Int) (f : Int → β) (p : β → Prop) :
+  (∀ j ∈ (IntRange lb ub).map f, p j) ↔ (∀ i, lb ≤ i ∧ i ≤ ub → p (f i)) := by
   constructor
-  · intro h i hi1 hi2
+  · intro h i hi
     have h := h (f i)
     have : f i ∈ (Util.IntRange lb ub).map f := by
       grind only [= List.mem_map, in_intrange_iff_within_bound]
     simp only [*]
   · intro h j hj
     grind
+
+theorem all_intrange_iff_all_bound' (lb ub : Int) (p : Int → Prop) :
+  (∀ i ∈ (IntRange lb ub), p i) ↔ (∀ i, lb ≤ i ∧ i ≤ ub → p i) := by
+  have := all_intrange_iff_all_bound lb ub id p
+  simp only [List.map_id_fun, id_eq] at this
+  gcongr
+
+theorem exists_intrange_iff_exists_bound (lb ub : Int) (f : Int → β) (p : β → Prop) :
+  (∃ j ∈ (IntRange lb ub).map f, p j) ↔ (∃ i, lb ≤ i ∧ i ≤ ub ∧ p (f i)) := by
+  constructor
+  · intro ⟨ j,  ⟨ hj1, hj2 ⟩ ⟩
+    grind
+  · intro ⟨ i,  ⟨ hi1, hi2, hi3 ⟩ ⟩
+    use f i
+    grind only [= List.mem_map, in_intrange_iff_within_bound]
+
+theorem exists_intrange_iff_exists_bound' (lb ub : Int) (p : Int → Prop) :
+  (∃ i ∈ (IntRange lb ub), p i) ↔ (∃ i, lb ≤ i ∧ i ≤ ub ∧ p i) := by
+  have := exists_intrange_iff_exists_bound lb ub id p
+  grind
 
 end Util

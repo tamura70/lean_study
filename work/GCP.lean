@@ -3,10 +3,12 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
-import Mathlib.Tactic.NormNum
-import LeanStudy.Util
+import LeanStudy.CSP.Basic
+import LeanStudy.SAT.DirectEncoderCSP
 
 section
+
+namespace GCP
 
 structure Graph (V : Type) where
   vertices : List V
@@ -14,10 +16,10 @@ structure Graph (V : Type) where
   symm : ∀ (u v : V), adj u v = adj v u
   loopless : ∀ v : V, adj v v = false
 
-namespace Graph
-
 def edges (G : Graph V) : List (V × V) :=
   (Util.combinations2 G.vertices).filter (fun (u, v) => G.adj u v)
+
+#check edges
 
 def CompleteGraph (n : Nat) : Graph Nat where
   vertices := List.range n

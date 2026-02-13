@@ -35,6 +35,10 @@ abbrev Constraint.Sat (valuation : Valuation) (c : Constraint) : Prop :=
   match c with
   | Constraint.ne x y => valuation x ≠ valuation y
 
+abbrev Constraint.ivars (c : Constraint) : List IVar :=
+  match c with
+  | Constraint.ne x y => [x, y]
+
 end CSP
 
 open CSP
@@ -43,6 +47,7 @@ open CSP
 structure CSP where
   ivariables : List IVar
   constraints : List Constraint
+  wf : ∀ c ∈ constraints, ∀ x ∈ c.ivars, x ∈ ivariables
 
 abbrev CSP.Sat (valuation : Valuation) (csp : CSP) : Prop :=
   (∀ x ∈ csp.ivariables, IVar.Sat valuation x) ∧

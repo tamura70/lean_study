@@ -83,56 +83,150 @@ theorem sat_ivar_iff_sat_cnf (val : Valuation) (x : IVar) :
   unfold List.count at this
   rw [this]
 
+abbrev all_val_ne (val : Valuation) (x y : IVar) :=
+  ∀ i, max x.lb y.lb ≤ i ∧ i ≤ min x.ub y.ub → val x ≠ i ∨ val y ≠ i
+
 lemma val_ne_iff_all_ne (val : Valuation) (x y : IVar) (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
-  ¬ (val x = val y) ↔ ∀ i, max x.lb y.lb ≤ i → i ≤ min x.ub y.ub → val x ≠ i ∨ val y ≠ i := by
+  ¬ (val x = val y) ↔ all_val_ne val x y := by
   grind
 
-lemma sat_clause_x_ne_iff_ne_or_ne (val : Valuation) (x y : IVar) (i : Int) :
-  Clause.Sat (val_to_a val) [x_ne x i, x_ne y i] ↔ val x ≠ i ∨ val y ≠ i := by
-  unfold Clause.Sat val_to_a Literal.eval
-  norm_num
-
-lemma sat_cnf_x_ne_iff_all_ne_or_ne (val : Valuation) (x y : IVar) :
-  CNF.Sat (val_to_a val) (encode_c (Constraint.ne x y)) ↔
-  ∀ i, max x.lb y.lb ≤ i → i ≤ min x.ub y.ub → val x ≠ i ∨ val y ≠ i := by
-  unfold CNF.Sat
-  constructor
-  · intro h i hi1 hi2
-    rw [← sat_clause_x_ne_iff_ne_or_ne val x y i]
-    unfold encode_c at h
-    have := h [x_ne x i, x_ne y i]
-    sorry
-  · intro h
-
-    sorry
-
-  rw [sat_clause_x_ne_iff_ne_or_ne val x y]
-
-   encode_c val_to_a
-  unfold Clause.Sat Literal.eval
-
-  simp only [List.mem_map, List.mem_ite_nil_left, lt_sup_iff, inf_lt_iff, not_or, not_lt,
-    List.map_map, List.mem_range, Function.comp_apply, ↓existsAndEq, and_true, decide_eq_true_eq,
-    Prod.exists, Bool.exists_bool, decide_eq_false_iff_not, forall_exists_index, and_imp,
-    sup_le_iff, le_inf_iff, ne_eq]
-  try?
-  norm_num
-  sorry
-
-lemma sat_ne_iff_sat_cnf (val : Valuation) (c : Constraint) (hc : c = Constraint.ne x y)
-  (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
-  Constraint.Sat val c ↔ CNF.Sat (val_to_a val) (encode_c c) := by
+lemma sat_ne_of_all_val_ne (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
+  all_val_ne val x y → Constraint.Sat val c := by
   unfold Constraint.Sat
   simp only [ne_eq]
-  rw [val_ne_iff_all_ne]
-  unfold encode_c
-  simp only [sup_le_iff, le_inf_iff, ne_eq, and_imp]
-  sorry -- TODO
+  have : c.1 = x := by simp_all only
+  rw [this]
+  have : c.2 = y := by simp_all only
+  rw [this]
+  grind
 
-theorem sat_constraint_iff_sat_cnf (val : Valuation) (c : Constraint) :
-  CNF.Sat (val_to_a val) (encode_c c) ↔ Constraint.Sat val c := by
+lemma all_val_ne_of_sat_ne (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) :
+  Constraint.Sat val c → all_val_ne val x y := by
+  unfold Constraint.Sat
+  simp only [ne_eq]
+  have : c.1 = x := by simp_all only
+  rw [this]
+  have : c.2 = y := by simp_all only
+  rw [this]
+  omega
+
+lemma sat_cnf_of_all_val_ne (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) :
+  all_val_ne val x y → CNF.Sat (val_to_a val) (encode_c c) := by
+  intro h
+  unfold CNF.Sat encode_c
+  set lb := max x.lb y.lb
+  set ub := min x.ub y.ub
+  intro cx hcx
+  set p1 := fun i => [x_ne x i, x_ne y i] = cx
+  have : ∃ i, lb ≤ i ∧ i ≤ ub ∧ p1 i := by
+    have := (Util.exists_intrange_iff_exists_bound' lb ub p1).mp
+    apply this
+    aesop
+  obtain ⟨ i, hi ⟩ := this
+  unfold Clause.Sat val_to_a
+  have : val x ≠ i ∨ val y ≠ i := by grind only
+  obtain hx | hy := this
+  case _ =>
+    use x_ne x i
+    grind
+  case _ =>
+    use x_ne y i
+    grind
+
+lemma all_val_ne_of_sat_cnf (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) :
+  CNF.Sat (val_to_a val) (encode_c c) → all_val_ne val x y := by
+  unfold CNF.Sat val_to_a encode_c all_val_ne
+  intro h
+  simp only [List.mem_map] at h
+  have : c.1 = x := by simp_all only
+  rw [this] at h
+  have : c.2 = y := by simp_all only
+  rw [this] at h
+  set lb := max x.lb y.lb
+  set ub := min x.ub y.ub
+  intro i hi
+  have h := h [x_ne x i, x_ne y i]
+  set p := fun i1 => [x_ne x i1, x_ne y i1] = [x_ne x i, x_ne y i]
+  have := Util.exists_intrange_iff_exists_bound' lb ub p
+  rw [this] at h
+  unfold Clause.Sat at h
+  aesop
+
+lemma sat_ne_of_sat_cnf (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) (hx : IVar.Sat val x) (hy : IVar.Sat val y) :
+  CNF.Sat (val_to_a val) (encode_c c) → Constraint.Sat val c := by
+  intro h
+  apply sat_ne_of_all_val_ne val c hc hx hy
+  apply all_val_ne_of_sat_cnf val c hc at h
+  assumption
+
+lemma sat_cnf_of_sat_ne (val : Valuation) (c : Constraint)
+  (hc : c = Constraint.ne x y) :
+  Constraint.Sat val c → CNF.Sat (val_to_a val) (encode_c c) := by
+  intro h
+  apply sat_cnf_of_all_val_ne val c hc
+  apply all_val_ne_of_sat_ne val c hc at h
+  assumption
+
+lemma sat_constraint_of_sat_cnf (val : Valuation) (c : Constraint)
+  (h : ∀ x ∈ c.ivars, IVar.Sat val x) :
+  CNF.Sat (val_to_a val) (encode_c c) → Constraint.Sat val c := by
   match c with
   | Constraint.ne x y =>
-    exact Iff.symm (sat_ne_iff_sat_cnf val (Constraint.ne x y) rfl)
+    let c1 := Constraint.ne x y
+    have hx : IVar.Sat val x := by grind
+    have hy : IVar.Sat val y := by grind
+    apply sat_ne_of_sat_cnf val c1 rfl hx hy
+
+lemma sat_cnf_of_sat_constraint (val : Valuation) (c : Constraint) :
+  Constraint.Sat val c → CNF.Sat (val_to_a val) (encode_c c) := by
+  match c with
+  | Constraint.ne x y =>
+    let c1 := Constraint.ne x y
+    apply sat_cnf_of_sat_ne val c1 rfl
+
+lemma sat_csp_of_sat_cnf (val : Valuation) (csp : CSP) :
+  CNF.Sat (val_to_a val) (encode csp) → CSP.Sat val csp := by
+  unfold encode
+  rw [CNF.sat_append_iff_sat_and]
+  repeat rw [CNF.sat_flatmap_iff_sat_all]
+  intro ⟨ h1, h2 ⟩
+  have h1 : ∀ x ∈ csp.ivariables, IVar.Sat val x := by
+    exact fun x a ↦ (fun val x ↦ (sat_ivar_iff_sat_cnf val x).mp) val x (h1 x a)
+  unfold CSP.Sat
+  constructor
+  · assumption
+  · intro c hc
+    have h := h2 c hc
+    have : ∀ x ∈ c.ivars, IVar.Sat val x := by
+      intro x hx
+      have : x ∈ csp.ivariables := csp.wf c hc x hx
+      (expose_names; exact (sat_ivar_iff_sat_cnf val x).mp (h1_1 x this))
+    exact sat_constraint_of_sat_cnf val c this (h2 c hc)
+
+lemma sat_cnf_of_sat_csp (val : Valuation) (csp : CSP) :
+  CSP.Sat val csp → CNF.Sat (val_to_a val) (encode csp) := by
+  unfold CSP.Sat
+  intro ⟨ h1, h2 ⟩
+  unfold encode
+  rw [CNF.sat_append_iff_sat_and]
+  repeat rw [CNF.sat_flatmap_iff_sat_all]
+  constructor
+  · intro x hx
+    have h1 := h1 x hx
+    (expose_names; exact (sat_ivar_iff_sat_cnf val x).mpr (h1_1 x hx))
+  · intro c hc
+    have h2 := h2 c hc
+    (expose_names; exact sat_cnf_of_sat_constraint val c (h2_1 c hc))
+
+theorem sat_csp_iff_sat_cnf (val : Valuation) (csp : CSP) :
+  CNF.Sat (val_to_a val) (encode csp) ↔ CSP.Sat val csp := by
+  constructor
+  · exact fun a ↦ sat_csp_of_sat_cnf val csp a
+  · exact fun a ↦ sat_cnf_of_sat_csp val csp a
 
 end DirectEncoder

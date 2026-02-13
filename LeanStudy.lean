@@ -1,5 +1,8 @@
 import LeanStudy.Basic
-import LeanStudy.Misc.prime_number_ruler
-import LeanStudy.Misc.unary_function
+import LeanStudy.Util
+import LeanStudy.CSP.Basic
 import LeanStudy.SAT.Basic
 import LeanStudy.SAT.DirectEncoder
+import LeanStudy.SAT.DirectEncoderCSP
+import LeanStudy.Misc.prime_number_ruler
+import LeanStudy.Misc.unary_function

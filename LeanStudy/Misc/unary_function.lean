@@ -3,6 +3,7 @@ Copyright (c) 2026 Naoyuki Tamura. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
+import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -17,40 +18,65 @@ Under Construction
 -/
 section
 
-noncomputable def rad : ℝ → ℝ := fun x ↦ ((Real.pi / 180) * x)
-noncomputable def deg : ℝ → ℝ := fun x ↦ ((Real.pi / 180)⁻¹ * x)
-noncomputable def sin : ℝ → ℝ := fun x ↦ Real.sin (rad x)
-noncomputable def cos : ℝ → ℝ := fun x ↦ Real.cos (rad x)
-noncomputable def tan : ℝ → ℝ := fun x ↦ Real.tan (rad x)
-noncomputable def asin : ℝ → ℝ := fun x ↦ deg (Real.arcsin x)
-noncomputable def acos : ℝ → ℝ := fun x ↦ deg (Real.arccos x)
-noncomputable def atan : ℝ → ℝ := fun x ↦ deg (Real.arctan x)
-noncomputable def inv : ℝ → ℝ := fun x ↦ x⁻¹
-noncomputable def squ : ℝ → ℝ := fun x ↦ x ^ 2
-noncomputable def sqrt : ℝ → ℝ := fun x ↦ Real.sqrt x
-noncomputable def pow : ℝ → ℝ := fun x ↦ 10 ^ x
-noncomputable def log : ℝ → ℝ := fun x ↦ Real.logb 10 x
+noncomputable abbrev pi_div_180 := Real.pi / 180
+noncomputable abbrev rad : ℝ → ℝ := fun x ↦ (pi_div_180 * x)
+noncomputable abbrev deg : ℝ → ℝ := fun x ↦ (x / pi_div_180)
+noncomputable abbrev sinx : ℝ → ℝ := fun x ↦ Real.sin (rad x)
+noncomputable abbrev cosx : ℝ → ℝ := fun x ↦ Real.cos (rad x)
+noncomputable abbrev tanx : ℝ → ℝ := fun x ↦ Real.tan (rad x)
+noncomputable abbrev asinx : ℝ → ℝ := fun x ↦ deg (Real.arcsin x)
+noncomputable abbrev acosx : ℝ → ℝ := fun x ↦ deg (Real.arccos x)
+noncomputable abbrev atanx : ℝ → ℝ := fun x ↦ deg (Real.arctan x)
+noncomputable abbrev invx : ℝ → ℝ := fun x ↦ x⁻¹
+noncomputable abbrev squx : ℝ → ℝ := fun x ↦ x ^ 2
+noncomputable abbrev sqrtx : ℝ → ℝ := fun x ↦ Real.sqrt x
+noncomputable abbrev powx : ℝ → ℝ := fun x ↦ 10 ^ x
+noncomputable abbrev logx : ℝ → ℝ := fun x ↦ Real.logb 10 x
 
-noncomputable def seq : List (ℝ → ℝ) → (ℝ → ℝ)
-| [] => fun x ↦ x
-| [f] => f
-| f::fs => (seq fs) ∘ f
+inductive UnaryFunc where
+| sin
+| cos
+| tan
+| asin
+| acos
+| atan
+| inv
+| squ
+| sqrt
+| pow
+| log
+deriving Repr
 
-lemma log_pow (x : Real) : log (pow x) = x := by
-  unfold log pow
+open UnaryFunc
+
+noncomputable abbrev eval (f : UnaryFunc) : ℝ → ℝ :=
+  match f with
+  | sin => sinx
+  | cos => cosx
+  | tan => tanx
+  | asin => asinx
+  | acos => acosx
+  | atan => atanx
+  | inv => invx
+  | squ => squx
+  | sqrt => sqrtx
+  | pow => powx
+  | log => logx
+
+lemma deg_rad (d : ℝ) : deg (rad d) = d := by
+  unfold deg rad
+  field_simp
+
+lemma rad_deg (x : ℝ) : rad (deg x) = x := by
+  unfold deg rad
+  field_simp
+
+lemma log_pow (x : ℝ) : logx (powx x) = x := by
   norm_num
 
-lemma deg_rad (d : Real) : deg (rad d) = d := by
-  unfold deg rad
-  field_simp
-
-lemma rad_deg (x : Real) : rad (deg x) = x := by
-  unfold deg rad
-  field_simp
-
-lemma add_one_x {x : Real} (hx : x ≥ 0)
-  : (squ (inv (cos (atan (sqrt x))))) = x + 1 := by
-  unfold squ inv sqrt cos atan
+lemma add_one_x (hx : x ≥ 0) :
+  (squx (invx (cosx (atanx (sqrtx x))))) = x + 1 := by
+  unfold squx invx cosx atanx sqrtx
   have : √ x ≥ 0 := by bound
   rw [Real.arctan_eq_arccos this]
   rw [rad_deg]
@@ -65,88 +91,113 @@ lemma add_one_x {x : Real} (hx : x ≥ 0)
     grind
   · bound
 
-/--
-x ≥ 0 のとき (squ ∘ inv ∘ cos ∘ atan ∘ sqrt) x は x + 1 に等しい
--/
-lemma add_one {x : Real} (hx : x ≥ 0)
-  : (squ ∘ inv ∘ cos ∘ atan ∘ sqrt) x = x + 1 := by
-  have : (squ ∘ inv ∘ cos ∘ atan ∘ sqrt) x = (squ (inv (cos (atan (sqrt x))))) := by
-    norm_num
-  rw [this]
-  exact add_one_x hx
-
-lemma neg_x {x : Real}
-  : (log (inv (pow x))) = - x := by
-  unfold log inv pow
+lemma neg_x :
+  (logx (invx (powx x))) = - x := by
+  unfold logx invx powx
   rw [Real.logb_inv]
   rw [Real.logb_rpow]
   · positivity
   · norm_num
 
+noncomputable abbrev seq (fs: List UnaryFunc) : (ℝ → ℝ) :=
+  (fs.map eval).foldr (fun (f g) => f ∘ g) id
+
+lemma seq_append_eq_seq_comp (fs gs : List UnaryFunc) :
+  seq (fs ++ gs) = seq fs ∘ seq gs := by
+  induction fs with
+  | nil =>
+    trivial
+  | cons f fs ih =>
+    have : (f :: fs) ++ gs = f :: (fs ++ gs) := by norm_num
+    rw [this]
+    have h1 : seq (f :: fs) = (eval f) ∘ (seq fs) := by trivial
+    have h2 : seq (f :: (fs ++ gs)) = (eval f) ∘ (seq (fs ++ gs)) := by trivial
+    rw [h1, h2]
+    rw [ih]
+    trivial
+
+lemma seq_comp_apply (x : ℝ) (fs gs : List UnaryFunc) :
+  ((seq fs) ∘ (seq gs)) x = (seq fs) ((seq gs) x) := by
+  norm_num
+
+abbrev list_add_one := [squ, inv, cos, atan, sqrt]
+
+abbrev list_add_n : Nat → List UnaryFunc
+  | 0 => []
+  | n + 1 => list_add_one ++ (list_add_n n)
+
+abbrev list_neg := [log, inv, pow]
+
+abbrev gen_i (i : Int) : List UnaryFunc :=
+  if i < 0 then
+    list_neg ++ list_add_n (- i).toNat
+  else
+    list_add_n i.toNat
+
+-- #eval gen_i (-2 : Int)
+
 /--
-(log ∘ inv ∘ pow) x は - x に等しい
+x ≥ 0 のとき seq list_add_one x は x + 1 に等しい
 -/
-lemma neg {x : Real}
-  : (log ∘ inv ∘ pow) x = - x := by
-  have : (log ∘ inv ∘ pow) x = (log (inv (pow x))) := by
-    norm_num
-  rw [this]
-  exact neg_x
+lemma seq_add_one (hx : x ≥ 0) :
+  seq list_add_one x = x + 1 := by
+  rw [← add_one_x hx]
+  trivial
 
-example : seq [inv, inv] = id := by
-  have : seq [inv, inv] = inv ∘ inv := by trivial
-  rw [this]
-  unfold inv
-  norm_num
-
-example : seq [pow, log] = id := by
-  have : seq [pow, log] = log ∘ pow := by trivial
-  rw [this]
-  have : (∀ x, (log ∘ pow) x = id x) → (log ∘ pow) = id := by
-    exact fun a ↦ Function.RightInverse.id a
-  apply this
-  intro x
-  unfold log pow id
-  simp_all only [Function.comp_apply, id_eq]
-  norm_num
-
-lemma seq_apply (f : ℝ → ℝ) (fs : List (ℝ → ℝ))
-  : seq (f::fs) = (seq fs) ∘ f := by
-  set x := (seq fs) ∘ f with hx
-  unfold seq
-  split
-  · trivial
-  · aesop
-  · simp_all only [imp_false, List.cons.injEq]
-
-lemma add_one_seq {x : Real} (hx : x ≥ 0) (fs : List (ℝ → ℝ))
-  : seq (sqrt::atan::cos::inv::squ::fs) x = seq fs (x + 1) := by
-  repeat rw [seq_apply]
-  simp only [Function.comp_apply]
-  rw [add_one_x hx]
-
-lemma neg_seq {x : Real} (fs : List (ℝ → ℝ))
-  : seq (pow::inv::log::fs) x = (seq fs) (- x) := by
-  repeat rw [seq_apply]
-  simp only [Function.comp_apply]
-  rw [neg_x]
-
-/-
-noncomputable def prepend_add_n (n : Int) (fs : List (ℝ → ℝ)) : List (ℝ → ℝ) :=
-  match n with
-  | 0 => fs
-  | n' + 1 => sqrt::atan::cos::inv::squ::(prepend_add_n n' fs)
-
-theorem add_n_seq (hx : x ≥ 0) (n : Int) (fs : List (ℝ → ℝ))
-  : seq (prepend_add_n n fs) x = seq fs (x + n) := by
+/--
+x ≥ 0 のとき seq (list_add_n n) x は x + n に等しい
+-/
+lemma seq_add_n (hx : x ≥ 0) (n : Nat) :
+  seq (list_add_n n) x = x + n := by
   induction n with
   | zero =>
     aesop
-  | succ n' h =>
-    unfold prepend_add_n
-    rw [add_one_seq hx]
-    sorry
+  | succ n' ih =>
+    unfold list_add_n
+    rw [seq_append_eq_seq_comp]
+    let f := seq list_add_one
+    set g := seq (list_add_n n')
+    have : (f ∘ g) x = f (g x) := by norm_num
+    rw [this, ih]
+    have : f (x + ↑n') = x + ↑n' + 1 := by
+      have : x + n' ≥ 0 := by finiteness
+      grind only [seq_add_one]
+    grind
+
+/--
+seq list_neg x は - x に等しい
 -/
+lemma seq_neg :
+  seq list_neg x = - x := by
+  rw [← neg_x]
+  trivial
+
+/-
+任意の整数 i について seq (gen_i i) 0 = i
+-/
+theorem seq_gen_i (i : Int) :
+  seq (gen_i i) 0 = i := by
+  have : i < 0 ∨ i ≥ 0 := by exact Int.lt_or_le i 0
+  obtain hn | hp := this
+  case _ =>
+    have : gen_i i = list_neg ++ list_add_n (- i).toNat := by
+      exact if_pos hn
+    rw [this]
+    rw [seq_append_eq_seq_comp]
+    rw [seq_comp_apply]
+    have hx : (0 : Real) ≥ 0 := by norm_num
+    rw [seq_add_n hx, seq_neg]
+    simp only [zero_add]
+    norm_cast
+    grind
+  case _ =>
+    have : gen_i i = list_add_n i.toNat := by
+      simp [*]
+    rw [this]
+    have hx : (0 : Real) ≥ 0 := by norm_num
+    rw [seq_add_n hx]
+    norm_cast
+    simp [*]
 
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html

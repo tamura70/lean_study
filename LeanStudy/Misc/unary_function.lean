@@ -207,14 +207,15 @@ theorem seq_gen_int (i : Int) :
 abbrev CFrac := List Nat
 
 abbrev RatToCFrac' (num : Nat) (den : Nat) (hd : den > 0) : CFrac :=
-  if h : num % den > 0 then
-    (num / den) :: (RatToCFrac' den (num % den) h)
-  else
+  if h : num % den = 0 then
     [num / den]
-termination_by den
-decreasing_by exact Nat.mod_lt num hd
+  else
+    have h1 : num % den > 0 := by grind
+    (num / den) :: (RatToCFrac' den (num % den) h1)
+  termination_by den
+  decreasing_by exact Nat.mod_lt num hd
 
-abbrev RatToCFrac (r : Rat) (h : r > 0) : CFrac :=
+abbrev RatToCFrac (r : Rat) : CFrac :=
   have : r.den > 0 := by finiteness
   RatToCFrac' r.num.toNat r.den this
 
@@ -226,16 +227,63 @@ abbrev CFracToRat (c : CFrac) : Rat :=
 #eval RatToCFrac' 355 113 (Nat.zero_lt_succ 112)
 #eval CFracToRat [3, 7, 16]
 
+#eval mkRat 2 4
+#eval (2 : Rat) / (4 : Rat)
+
+theorem xxx (c : CFrac) :
+  ∀ r : Rat, r ≥ 0 → RatToCFrac r = c → CFracToRat c = r := by
+  induction c with
+  | nil =>
+    unfold RatToCFrac CFracToRat
+    intro r hr
+    have : RatToCFrac r = [] → r = 0 := by
+      unfold RatToCFrac RatToCFrac'
+      grind
+    tauto
+  | cons a c ih =>
+    intro r hr1 hr2
+    unfold RatToCFrac RatToCFrac' at hr2
+    have h : CFracToRat c = 1 / (r - a) := by
+      have : r.num % r.den = 0 ∨ r.num % r.den ≠ 0 := by
+        grind only [Int.eq_natCast_toNat, Rat.num_nonneg]
+      have ih := ih (1 / (r - a))
+      obtain hrz | hrp := this
+      case _ =>
+        norm_cast at hr2
+        simp [*] at hr2
+        have h1 : 1 / (r - a) ≥ 0 := by
+          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg]
+          sorry
+        have h2 : RatToCFrac (1 / (r - a)) = c := by
+          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg, zero_eq_inv, forall_const,
+            implies_true]
+          sorry
+        have ih := ih h1 h2
+        assumption
+      case _ =>
+        simp [*] at hr2
+        have h1 : 1 / (r - a) ≥ 0 := by
+          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg]
+          sorry
+        have h2 : RatToCFrac (1 / (r - a)) = c := by
+          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg, forall_const, implies_true]
+          sorry
+        have ih := ih h1 h2
+        assumption
+    unfold CFracToRat
+    rw [h]
+    norm_num
+
 abbrev gen_cfrac (c : CFrac) : List UnaryFunc :=
   match c with
   | [] => []
   | a :: c => (list_add_n a) ++ [inv] ++ gen_cfrac c
 
 abbrev gen_rat (r : Rat) (h : r > 0) : List UnaryFunc :=
-  gen_cfrac (RatToCFrac r h)
+  gen_cfrac (RatToCFrac r)
 
 lemma cfractorat_ge_zero (c : CFrac) :
-  0 < CFracToRat c := by
+  CFracToRat c ≥ 0:= by
   sorry
 
 lemma seq_gen_cfrac (c : CFrac) :
@@ -251,8 +299,7 @@ lemma seq_gen_cfrac (c : CFrac) :
     have : seq [inv] (CFracToRat c) ≥ 0 := by
       unfold seq eval invx
       norm_num
-      have : 0 < CFracToRat c := by exact cfractorat_ge_zero c
-      gcongr
+      exact cfractorat_ge_zero c
     rw [seq_add_n this]
     unfold seq eval invx
     norm_num
@@ -261,17 +308,7 @@ lemma seq_gen_cfrac (c : CFrac) :
 
 theorem seq_gen_rat (r : Rat) (h : r > 0) :
   seq (gen_rat r h) 0 = r := by
-  unfold gen_rat RatToCFrac RatToCFrac'
-
   sorry
-
-
-
-
-
-/-
-https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html
--/
 
 
 end

@@ -7,6 +7,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Init.Data.Rat.Basic
 
 /-!
 Under Construction
@@ -116,8 +117,12 @@ lemma seq_append_eq_seq_comp (fs gs : List UnaryFunc) :
     rw [ih]
     trivial
 
-lemma seq_comp_apply (x : ℝ) (fs gs : List UnaryFunc) :
-  ((seq fs) ∘ (seq gs)) x = (seq fs) ((seq gs) x) := by
+lemma seq_comp2_apply (x : ℝ) (fs1 fs2 : List UnaryFunc) :
+  ((seq fs1) ∘ (seq fs2)) x = (seq fs1) ((seq fs2) x) := by
+  norm_num
+
+lemma seq_comp3_apply (x : ℝ) (fs1 fs2 fs3 : List UnaryFunc) :
+  (((seq fs1) ∘ (seq fs2)) ∘ (seq fs3)) x = (seq fs1) ((seq fs2) ((seq fs3) x)) := by
   norm_num
 
 abbrev list_add_one := [squ, inv, cos, atan, sqrt]
@@ -128,7 +133,7 @@ abbrev list_add_n : Nat → List UnaryFunc
 
 abbrev list_neg := [log, inv, pow]
 
-abbrev gen_i (i : Int) : List UnaryFunc :=
+abbrev gen_int (i : Int) : List UnaryFunc :=
   if i < 0 then
     list_neg ++ list_add_n (- i).toNat
   else
@@ -173,31 +178,96 @@ lemma seq_neg :
   trivial
 
 /-
-任意の整数 i について seq (gen_i i) 0 = i
+任意の整数 i について seq (gen_int i) 0 = i
 -/
-theorem seq_gen_i (i : Int) :
-  seq (gen_i i) 0 = i := by
+theorem seq_gen_int (i : Int) :
+  seq (gen_int i) 0 = i := by
   have : i < 0 ∨ i ≥ 0 := by exact Int.lt_or_le i 0
   obtain hn | hp := this
   case _ =>
-    have : gen_i i = list_neg ++ list_add_n (- i).toNat := by
+    have : gen_int i = list_neg ++ list_add_n (- i).toNat := by
       exact if_pos hn
     rw [this]
     rw [seq_append_eq_seq_comp]
-    rw [seq_comp_apply]
+    rw [seq_comp2_apply]
     have hx : (0 : Real) ≥ 0 := by norm_num
     rw [seq_add_n hx, seq_neg]
     simp only [zero_add]
     norm_cast
     grind
   case _ =>
-    have : gen_i i = list_add_n i.toNat := by
+    have : gen_int i = list_add_n i.toNat := by
       simp [*]
     rw [this]
     have hx : (0 : Real) ≥ 0 := by norm_num
     rw [seq_add_n hx]
     norm_cast
     simp [*]
+
+abbrev CFrac := List Nat
+
+abbrev RatToCFrac' (num : Nat) (den : Nat) (hd : den > 0) : CFrac :=
+  if h : num % den > 0 then
+    (num / den) :: (RatToCFrac' den (num % den) h)
+  else
+    [num / den]
+termination_by den
+decreasing_by exact Nat.mod_lt num hd
+
+abbrev RatToCFrac (r : Rat) (h : r > 0) : CFrac :=
+  have : r.den > 0 := by finiteness
+  RatToCFrac' r.num.toNat r.den this
+
+abbrev CFracToRat (c : CFrac) : Rat :=
+  match c with
+  | [] => 0
+  | a :: c => a + 1 / (CFracToRat c)
+
+#eval RatToCFrac' 355 113 (Nat.zero_lt_succ 112)
+#eval CFracToRat [3, 7, 16]
+
+abbrev gen_cfrac (c : CFrac) : List UnaryFunc :=
+  match c with
+  | [] => []
+  | a :: c => (list_add_n a) ++ [inv] ++ gen_cfrac c
+
+abbrev gen_rat (r : Rat) (h : r > 0) : List UnaryFunc :=
+  gen_cfrac (RatToCFrac r h)
+
+lemma cfractorat_ge_zero (c : CFrac) :
+  0 < CFracToRat c := by
+  sorry
+
+lemma seq_gen_cfrac (c : CFrac) :
+  seq (gen_cfrac c) 0 = CFracToRat c := by
+  induction c with
+  | nil =>
+    aesop
+  | cons a c ih =>
+    unfold gen_cfrac CFracToRat
+    repeat rw [seq_append_eq_seq_comp]
+    rw [seq_comp3_apply 0]
+    rw [ih]
+    have : seq [inv] (CFracToRat c) ≥ 0 := by
+      unfold seq eval invx
+      norm_num
+      have : 0 < CFracToRat c := by exact cfractorat_ge_zero c
+      gcongr
+    rw [seq_add_n this]
+    unfold seq eval invx
+    norm_num
+    norm_cast
+    grind
+
+theorem seq_gen_rat (r : Rat) (h : r > 0) :
+  seq (gen_rat r h) 0 = r := by
+  unfold gen_rat RatToCFrac RatToCFrac'
+
+  sorry
+
+
+
+
 
 /-
 https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/ContinuedFractions/Basic.html

@@ -7,6 +7,11 @@ Authors: Naoyuki Tamura
 
 section
 
+#eval (0 : Nat) == (0 : Int)
+#eval Nat.add 1 0 == Int.add 0 1
+
+example (a : Nat) (b : Nat) : a + b == b + a := by grind
+
 theorem mod_eq {n m1 m2 r : Nat} (h1 : n % m1 = r) (h2 : m1 % m2 = 0) :
   (n % m2) = (r % m2) := by
   have : m2 ∣ m1 := Nat.dvd_of_mod_eq_zero h2

@@ -8,6 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Init.Data.Rat.Basic
+import Mathlib.Tactic
 
 /-!
 Under Construction
@@ -177,8 +178,9 @@ lemma seq_neg :
   rw [← neg_x]
   trivial
 
-/-
-任意の整数 i について seq (gen_int i) 0 = i
+/--
+UnaryFunc の合成で 0 から任意の整数を生成できる．
+すなわち，任意の整数 i について seq (gen_int i) 0 = i
 -/
 theorem seq_gen_int (i : Int) :
   seq (gen_int i) 0 = i := by
@@ -230,7 +232,48 @@ abbrev CFracToRat (c : CFrac) : Rat :=
 #eval mkRat 2 4
 #eval (2 : Rat) / (4 : Rat)
 
-theorem xxx (c : CFrac) :
+abbrev gen_cfrac (c : CFrac) : List UnaryFunc :=
+  match c with
+  | [] => []
+  | a :: c => (list_add_n a) ++ [inv] ++ gen_cfrac c
+
+abbrev gen_rat (r : Rat) : List UnaryFunc :=
+  if r ≥ 0 then
+    gen_cfrac (RatToCFrac r)
+  else
+    list_neg ++ gen_cfrac (RatToCFrac r.neg)
+
+lemma cfractorat_ge_zero (c : CFrac) :
+  CFracToRat c ≥ 0:= by
+  induction c with
+  | nil =>
+    norm_num
+  | cons a c ih =>
+    unfold CFracToRat
+    finiteness
+
+lemma cfractorat (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c) :
+  CFracToRat c = 1 / (r - a) := by
+  have num_ge_zero : r.num ≥ 0 := by positivity
+  have num_nat : r.num = r.num.toNat := by
+    simp_all only [ge_iff_le, Rat.num_nonneg, Int.ofNat_toNat, sup_of_le_left]
+  unfold RatToCFrac RatToCFrac' at h
+  simp only at h
+  split at h
+  case isTrue ht =>
+    simp only [List.cons.injEq, List.nil_eq] at h
+    obtain ⟨ h1, h2 ⟩ := h
+    rw [h2]
+    simp only [one_div, zero_eq_inv]
+    zify at *
+    have : a * r.den = r.num.toNat := by sorry
+    sorry
+  case isFalse hf =>
+    simp?
+    zify at *
+    sorry
+
+theorem cfractorat_of_rattocfrac (c : CFrac) :
   ∀ r : Rat, r ≥ 0 → RatToCFrac r = c → CFracToRat c = r := by
   induction c with
   | nil =>
@@ -242,49 +285,11 @@ theorem xxx (c : CFrac) :
     tauto
   | cons a c ih =>
     intro r hr1 hr2
-    unfold RatToCFrac RatToCFrac' at hr2
     have h : CFracToRat c = 1 / (r - a) := by
-      have : r.num % r.den = 0 ∨ r.num % r.den ≠ 0 := by
-        grind only [Int.eq_natCast_toNat, Rat.num_nonneg]
-      have ih := ih (1 / (r - a))
-      obtain hrz | hrp := this
-      case _ =>
-        norm_cast at hr2
-        simp [*] at hr2
-        have h1 : 1 / (r - a) ≥ 0 := by
-          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg]
-          sorry
-        have h2 : RatToCFrac (1 / (r - a)) = c := by
-          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg, zero_eq_inv, forall_const,
-            implies_true]
-          sorry
-        have ih := ih h1 h2
-        assumption
-      case _ =>
-        simp [*] at hr2
-        have h1 : 1 / (r - a) ≥ 0 := by
-          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg]
-          sorry
-        have h2 : RatToCFrac (1 / (r - a)) = c := by
-          simp_all only [ge_iff_le, one_div, inv_nonneg, sub_nonneg, forall_const, implies_true]
-          sorry
-        have ih := ih h1 h2
-        assumption
+      apply cfractorat r hr1 c hr2
     unfold CFracToRat
     rw [h]
     norm_num
-
-abbrev gen_cfrac (c : CFrac) : List UnaryFunc :=
-  match c with
-  | [] => []
-  | a :: c => (list_add_n a) ++ [inv] ++ gen_cfrac c
-
-abbrev gen_rat (r : Rat) (h : r > 0) : List UnaryFunc :=
-  gen_cfrac (RatToCFrac r)
-
-lemma cfractorat_ge_zero (c : CFrac) :
-  CFracToRat c ≥ 0:= by
-  sorry
 
 lemma seq_gen_cfrac (c : CFrac) :
   seq (gen_cfrac c) 0 = CFracToRat c := by
@@ -306,9 +311,26 @@ lemma seq_gen_cfrac (c : CFrac) :
     norm_cast
     grind
 
-theorem seq_gen_rat (r : Rat) (h : r > 0) :
-  seq (gen_rat r h) 0 = r := by
-  sorry
-
+/--
+UnaryFunc の合成で 0 から任意の非負の有理数を生成できる．
+すなわち，任意の非負の有理数 r について seq (gen_rat r) 0 = r
+-/
+theorem seq_gen_rat (r : Rat) :
+  seq (gen_rat r) 0 = r := by
+  unfold gen_rat
+  split
+  case _ =>
+    grind only [seq_gen_cfrac, Rat.cast_inj, cfractorat_of_rattocfrac]
+  case _ =>
+    have : - r ≥ 0 := by grind
+    have hr : r.neg ≥ 0 := by finiteness
+    have : seq (gen_cfrac (RatToCFrac r.neg)) 0 = r.neg := by
+      grind only [seq_gen_cfrac, Rat.cast_inj, cfractorat_of_rattocfrac]
+    repeat rw [seq_append_eq_seq_comp]
+    rw [seq_comp2_apply]
+    rw [this]
+    rw [seq_neg]
+    norm_cast
+    exact neg_eq_iff_eq_neg.mpr rfl
 
 end

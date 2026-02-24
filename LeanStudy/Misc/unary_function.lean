@@ -266,10 +266,10 @@ lemma cfractorat (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c
     rw [h2]
     simp only [one_div, zero_eq_inv]
     zify at *
-    have : a * r.den = r.num.toNat := by sorry
+    -- field_simp at *
     sorry
   case isFalse hf =>
-    simp?
+    simp only [one_div]
     zify at *
     sorry
 

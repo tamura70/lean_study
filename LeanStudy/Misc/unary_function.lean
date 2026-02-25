@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Naoyuki Tamura
 -/
 import Mathlib.Data.Real.Basic
+import Mathlib.Algebra.Ring.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -255,22 +256,34 @@ lemma cfractorat_ge_zero (c : CFrac) :
 lemma cfractorat (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c) :
   CFracToRat c = 1 / (r - a) := by
   have num_ge_zero : r.num ≥ 0 := by positivity
-  have num_nat : r.num = r.num.toNat := by
+  have num_nat : r.num.toNat = r.num := by
     simp_all only [ge_iff_le, Rat.num_nonneg, Int.ofNat_toNat, sup_of_le_left]
   unfold RatToCFrac RatToCFrac' at h
   simp only at h
   split at h
   case isTrue ht =>
+    have ht1 : r.den ∣ r.num.toNat := by exact Nat.dvd_of_mod_eq_zero ht
     simp only [List.cons.injEq, List.nil_eq] at h
     obtain ⟨ h1, h2 ⟩ := h
     rw [h2]
     simp only [one_div, zero_eq_inv]
-    zify at *
-    -- field_simp at *
-    sorry
+    symm
+    have h3 : a * r.den = r.num.toNat := by
+      rw [← h1]
+      exact Nat.div_mul_cancel ht1
+    have h4 : r * r.den = r.num.toNat := by
+      simp only [Rat.mul_den_eq_num]
+      exact Eq.symm (Rat.ext num_nat rfl)
+    have : (r - a) * r.den = 0 := by calc
+      (r - a) * r.den = r * r.den - a * r.den := by noncomm_ring
+      _ = r.num.toNat - r.num.toNat := by aesop
+      _ = 0 := by norm_num
+    simp_all
   case isFalse hf =>
     simp only [one_div]
-    zify at *
+    simp only [List.cons.injEq] at h
+    obtain ⟨ h1, h2 ⟩ := h
+    set r1 : Nat := r.num.toNat % r.den with hr1
     sorry
 
 theorem cfractorat_of_rattocfrac (c : CFrac) :

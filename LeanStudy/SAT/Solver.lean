@@ -160,7 +160,7 @@ def solver1 (f : CNF α) : Option (Std.HashMap α Bool) :=
       search vs g >>= fun a =>
       some (a.insert v sign)
     match vs with
-    | [] => some {}
+    | [] => if f = [] then some {} else none
     | v :: vs => (decide v false vs f) <|> (decide v true vs f)
   search f.variables f
 
@@ -210,29 +210,25 @@ lemma clauses_empty_of_variables_empty (f : CNF α) :
     case _ hc2 =>
       solve_by_elim
 
-lemma solver1_sat (f : CNF α) (sol : Std.HashMap α Bool) :
-  solver1 f = some sol → CNF.Sat (hashmap_to_assignment sol) f := by
-  induction f with
+lemma solver1_sat (f : CNF α) (vs : List α) (sol : Std.HashMap α Bool) (hvs : vs ⊆ f.variables) :
+  solver1.search vs f = some sol → CNF.Sat (hashmap_to_assignment sol) f := by
+  induction vs with
   | nil =>
-    tauto
-  | cons c f ih =>
+    unfold solver1.search
+    by_cases f = []
+    case _ =>
+      simp only [Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
+      intro hf hs
+      rw [hf]
+      exact List.forall_iff_forall_mem.mp trivial
+    case _ =>
+      simp only [Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
+      intro hf hs
+      trivial
+  | cons v vs ih =>
+    unfold solver1.search
     intro h
-    split at h
-    case _ h1 =>
-      replace h1 := clauses_empty_of_variables_empty (c :: f) h1
-      have hc : c = [] := by solve_by_elim
-      rw [hc]
-      unfold CNF.Sat Clause.Sat
-      by_contra
-      simp only [List.mem_cons, decide_eq_true_eq, Prod.exists, exists_eq_right', forall_eq_or_imp,
-        List.not_mem_nil, exists_const, false_and, not_false_eq_true] at this
-      obtain ⟨ c1, hc1 ⟩ := h
-
-
-      sorry
-    case _ h2 =>
-
-      sorry
+    sorry
 
 /-
 abbrev Clause.finset_of_variables (c : Clause α) : Finset α :=
@@ -285,10 +281,15 @@ def cnf1 : CNF α := [
   [p.negate, q.negate]
 ]
 
+def cnf2 : CNF α := [
+  []
+]
+
 #check cnf1
 #eval cnf1.variables
 #eval CNF.substOpt p cnf1
 #eval solver1 cnf1
+#eval solver1 cnf2
 
 
 

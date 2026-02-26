@@ -164,6 +164,75 @@ def solver1 (f : CNF α) : Option (Std.HashMap α Bool) :=
     | v :: vs => (decide v false vs f) <|> (decide v true vs f)
   search f.variables f
 
+abbrev hashmap_to_assignment (map : Std.HashMap α Bool) : Assignment α :=
+  fun (x : α) => map.getD x false
+
+lemma erasedups_empty {β : Type _} [BEq β] (vs : List β) :
+  vs.eraseDups = [] → vs = [] := by
+  induction vs with
+  | nil =>
+    norm_num
+  | cons v vs1 ih =>
+    intro h
+    grind
+
+lemma clause_variables_empty (c : Clause α) :
+  c.variables = [] → c = [] := by
+  intro h
+  unfold Clause.variables at h
+  have : c.map (fun x => x.1) = [] := by
+    exact erasedups_empty (List.map (fun x ↦ x.1) c) h
+  simp_all only [List.eraseDups_nil, List.map_eq_nil_iff]
+
+lemma clauses_empty_of_variables_empty (f : CNF α) :
+  f.variables = [] → ∀ c ∈ f, c = [] := by
+  induction f with
+  | nil =>
+    norm_num
+  | cons c f ih =>
+    unfold CNF.variables
+    intro h
+    rw [List.eraseDups_append] at h
+    have : c.variables.eraseDups = [] := by
+      simp_all only [List.append_eq_nil_iff]
+    have h1 : c.variables = [] := by
+      exact erasedups_empty c.variables this
+    have : ((CNF.variables f).removeAll c.variables).eraseDups = [] := by
+      simp_all only [List.eraseDups_nil, List.removeAll_nil, List.nil_append]
+    have : (CNF.variables f).removeAll c.variables = [] := by
+      exact erasedups_empty ((CNF.variables f).removeAll c.variables) this
+    have h2 : CNF.variables f = [] := by
+      simp_all only [List.eraseDups_nil, List.removeAll_nil, List.nil_append]
+    intro c1 hc
+    obtain hc1 | hc2 := hc
+    case _ hc1 =>
+      exact clause_variables_empty c h1
+    case _ hc2 =>
+      solve_by_elim
+
+lemma solver1_sat (f : CNF α) (sol : Std.HashMap α Bool) :
+  solver1 f = some sol → CNF.Sat (hashmap_to_assignment sol) f := by
+  induction f with
+  | nil =>
+    tauto
+  | cons c f ih =>
+    intro h
+    split at h
+    case _ h1 =>
+      replace h1 := clauses_empty_of_variables_empty (c :: f) h1
+      have hc : c = [] := by solve_by_elim
+      rw [hc]
+      unfold CNF.Sat Clause.Sat
+      by_contra
+      simp only [List.mem_cons, decide_eq_true_eq, Prod.exists, exists_eq_right', forall_eq_or_imp,
+        List.not_mem_nil, exists_const, false_and, not_false_eq_true] at this
+      obtain ⟨ c1, hc1 ⟩ := h
+
+
+      sorry
+    case _ h2 =>
+
+      sorry
 
 /-
 abbrev Clause.finset_of_variables (c : Clause α) : Finset α :=
@@ -182,9 +251,6 @@ lemma cnf_vars_as_set (f : CNF α) :
   sorry
 
 
-abbrev hashmap_to_assignment (map : Std.HashMap α Bool) : Assignment α :=
-  fun (x : α) => map.getD x false
-
 lemma cnf_novars_iff_clauses_novars (f : CNF α) :
   f.variables.isEmpty ↔ ∀ c ∈ f, c.variables.isEmpty := by
   unfold CNF.variables
@@ -202,20 +268,6 @@ lemma clauses_empty_of_variables_empty (f : CNF α) :
   intro hf c hc
   refine Eq.symm (List.Perm.nil_eq ?_)
   sorry
-
-lemma solver1_sat (f : CNF α) (sol : Std.HashMap α Bool) :
-  solver1 f = some sol → CNF.Sat (hashmap_to_assignment sol) f := by
-  unfold solver1 solver1.search
-  split
-  case h_1 h1 =>
-    intro hs
-    simp only [Option.some.injEq] at hs
-    rw [← hs]
-    unfold hashmap_to_assignment
-    simp only [Std.HashMap.getD_empty]
-    sorry
-  case h_2 =>
-    sorry
 -/
 
 end SAT

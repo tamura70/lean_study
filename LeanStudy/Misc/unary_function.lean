@@ -5,6 +5,7 @@ Authors: Naoyuki Tamura
 -/
 import Mathlib.Data.Real.Basic
 import Mathlib.Algebra.Ring.Basic
+import Mathlib.Algebra.Ring.Rat
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -253,7 +254,8 @@ lemma cfractorat_ge_zero (c : CFrac) :
     unfold CFracToRat
     finiteness
 
-lemma cfractorat (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c) :
+/-
+lemma cfractorat' (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c) :
   CFracToRat c = 1 / (r - a) := by
   have num_ge_zero : r.num ≥ 0 := by positivity
   have num_nat : r.num.toNat = r.num := by
@@ -284,7 +286,56 @@ lemma cfractorat (r : Rat) (hr : r ≥ 0) (c : CFrac) (h : RatToCFrac r = a :: c
     simp only [List.cons.injEq] at h
     obtain ⟨ h1, h2 ⟩ := h
     set r1 : Nat := r.num.toNat % r.den with hr1
+    have : r.num - r1 = a * r.den := by
+      sorry
     sorry
+
+lemma cfractorat (r r1 : Rat) (hr : r ≥ 0) (c : CFrac)
+  (ha : RatToCFrac r = a :: c) (hc : CFracToRat c = r1) :
+  r = a + 1 / r1 := by
+  unfold RatToCFrac RatToCFrac' at ha
+  simp only at ha
+  split at ha
+  case isTrue ht =>
+    grind only [CFracToRat.eq_def, cfractorat', RatToCFrac'.eq_def]
+  case isFalse hf =>
+    rw [← hc]
+    simp only [List.cons.injEq] at ha
+    obtain ⟨ ha1, ha2 ⟩ := ha
+    sorry
+-/
+
+lemma rattocfrac_cons' (r : Rat) (a : Nat) (c : CFrac) (hr : RatToCFrac r = a :: c) :
+  a = Nat.div r.num.toNat r.den := by
+  unfold RatToCFrac RatToCFrac' at hr
+  simp only at hr
+  split at hr
+  case isTrue ht =>
+    aesop
+  case isFalse hf =>
+    aesop
+
+lemma rattocfrac_cons (r : Rat) (hr : r ≥ 0) (a : Nat) (c : CFrac) (h : RatToCFrac r = a :: c) :
+  a = Nat.div r.num.toNat r.den ∧ RatToCFrac (1 / (r - a)) = c := by
+  constructor
+  · exact rattocfrac_cons' r a c h
+  · unfold RatToCFrac at *
+    unfold RatToCFrac' at h
+    simp only [ge_iff_le, one_div] at *
+    split at h
+    case isTrue ht =>
+      obtain ⟨ h1, h2 ⟩ := h
+      sorry
+    case isFalse hf =>
+      obtain ⟨ h1, h2 ⟩ := h
+
+      unfold RatToCFrac'
+
+      sorry
+
+lemma cfractorat_cons (a : Nat) (r : Rat) (c : CFrac) (hc : CFracToRat c = r) :
+  CFracToRat (a :: c) = a + 1 / r := by
+  simp_all only [one_div, add_right_inj]
 
 theorem cfractorat_of_rattocfrac (c : CFrac) :
   ∀ r : Rat, r ≥ 0 → RatToCFrac r = c → CFracToRat c = r := by
@@ -298,8 +349,20 @@ theorem cfractorat_of_rattocfrac (c : CFrac) :
     tauto
   | cons a c ih =>
     intro r hr1 hr2
+    have : a = Nat.div r.num.toNat r.den := by exact rattocfrac_cons r a c hr2
+    let r₁ := 1 / (r - a)
+    have hr₁ := ih r₁
+
+
+    have hr₁ : r₁ ≥ 0 := by sorry
+    have := ih r₁ hr₁
+    have : CFracToRat c = r₁ := by sorry
+    rw [cfrac_cons a r₁ c ]
+
+
+
     have h : CFracToRat c = 1 / (r - a) := by
-      apply cfractorat r hr1 c hr2
+      apply cfractorat' r hr1 c hr2
     unfold CFracToRat
     rw [h]
     norm_num

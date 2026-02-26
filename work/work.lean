@@ -9,6 +9,7 @@ section
 
 #eval (0 : Nat) == (0 : Int)
 #eval Nat.add 1 0 == Int.add 0 1
+#check Nat.add 1 0
 
 example (a : Nat) (b : Nat) : a + b == b + a := by grind
 

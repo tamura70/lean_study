@@ -8,7 +8,7 @@ import Mathlib.Data.List.Nodup
 import Std.Data.HashMap.Basic
 import Std.Data.HashSet.Basic
 import LeanStudy.SAT.Basic
--- import Mathlib.Tactic.NormNum
+import Mathlib.Tactic
 
 section
 
@@ -225,10 +225,21 @@ lemma solver1_sat (f : CNF α) (vs : List α) (sol : Std.HashMap α Bool) (hvs :
       simp only [Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
       intro hf hs
       trivial
-  | cons v vs ih =>
-    unfold solver1.search
+  | cons v vs1 ih =>
+    have : vs1 ⊆ f.variables := by simp_all only [List.cons_subset]
+    replace ih := ih this
+    unfold solver1.search solver1.search.decide
+    simp? says
+      simp only [Option.bind_eq_bind, Option.orElse_eq_orElse, Option.orElse_eq_or,
+        Option.or_eq_some_iff, Option.bind_eq_none_iff, Option.ite_none_left_eq_some,
+        Option.some.injEq, reduceCtorEq, imp_false, and_imp, forall_apply_eq_imp_iff]
     intro h
-    sorry
+    obtain h1 | ⟨ h21, h22 ⟩ := h
+    case _ =>
+
+      sorry
+    case _ =>
+      sorry
 
 /-
 abbrev Clause.finset_of_variables (c : Clause α) : Finset α :=
